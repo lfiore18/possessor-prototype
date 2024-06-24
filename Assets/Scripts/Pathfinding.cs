@@ -53,7 +53,7 @@ public class Pathfinding : MonoBehaviour
             player = GameObject.Find("Player");
 
 
-        //playerCellPos = tilemap.WorldToCell(player.transform.position);
+        playerCellPos = tilemap.WorldToCell(player.transform.position);
 
         SetDebugPositions();
         BreadthFirstSearch();
@@ -63,7 +63,8 @@ public class Pathfinding : MonoBehaviour
     private void Update()
     {
         //playerCellPos = tilemap.WorldToCell(player.transform.position);
-
+        SetDebugPositions();
+        BreadthFirstSearch();
     }
 
     List<Vector3Int> CalculatePath()
@@ -86,6 +87,10 @@ public class Pathfinding : MonoBehaviour
 
     void BreadthFirstSearch()
     {
+        // Clear incase any data is left over from previous search
+        searchPerimeter.Clear();
+        cameFrom.Clear();
+
         Vector3Int startTilePos = startPos;
 
         // Start tile is the first tile to search
@@ -100,7 +105,7 @@ public class Pathfinding : MonoBehaviour
         while (count > 0 && !foundTarget)
         {
             Vector3Int currentTile = searchPerimeter[0];
-            searchPerimeter.Remove(currentTile);
+            searchPerimeter.RemoveAt(0);
 
             foundTarget = CheckNeighbourCells(currentTile);
             count = turnOnDebugLoopLimit ? count - 1 : searchPerimeter.Count;
@@ -119,7 +124,7 @@ public class Pathfinding : MonoBehaviour
         {
             { 1, 0 }, // up
             { -1, 0 }, // down
-            { 0, -1}, // left
+            { 0, -1 }, // left
             { 0, 1 }, // right
 
             { -1, -1}, // top-left
@@ -143,6 +148,7 @@ public class Pathfinding : MonoBehaviour
                 cameFrom.Add(newPos, cell);
             }
             
+            // if (newPos == targetPos) return true;
         }
         return false;
     }
@@ -181,15 +187,7 @@ public class Pathfinding : MonoBehaviour
     {
         var halfCellSize = tilemap.cellSize / 2;
 
-        if (startObj != null)
-        {
-            startPos = tilemap.WorldToCell(startObj.transform.position);         
-        }
-
-        if (targetObj != null)
-        {
-            targetPos = tilemap.WorldToCell(targetObj.transform.position);
-        }
+        SetDebugPositions();
 
         if (Application.isPlaying)
         {
@@ -211,24 +209,30 @@ public class Pathfinding : MonoBehaviour
                 Gizmos.DrawCube(targetPos + halfCellSize, tilemap.cellSize);
             }
 
-/*            foreach(Vector3Int cell in searchPerimeter)
-            {
-                Gizmos.color = new Color(0, 1, 1, 0.4f);
-                Gizmos.DrawCube(cell + halfCellSize, tilemap.cellSize);
-            }*/
+            /*            foreach(Vector3Int cell in searchPerimeter)
+                        {
+                            Gizmos.color = new Color(0, 1, 1, 0.4f);
+                            Gizmos.DrawCube(cell + halfCellSize, tilemap.cellSize);
+                        }*/
 
-            // Draw debug overlay for all cells visited during breadth-first search
-            foreach (KeyValuePair<Vector3Int, Vector3Int> entry in cameFrom)
+            if (cameFrom != null)
             {
-                Gizmos.color = new Color(0, 1, 1, 0.2f);
-                Gizmos.DrawCube(entry.Key + halfCellSize, tilemap.cellSize);
+                // Draw debug overlay for all cells visited during breadth-first search
+                foreach (KeyValuePair<Vector3Int, Vector3Int> entry in cameFrom)
+                {
+                    Gizmos.color = new Color(0, 1, 1, 0.2f);
+                    Gizmos.DrawCube(entry.Key + halfCellSize, tilemap.cellSize);
+                }
             }
 
             List<Vector3Int> path = CalculatePath();
-            foreach (Vector3Int position in path)
+            if (path != null)
             {
-                Gizmos.color = new Color(1, 0.6f, 1, 0.4f);
-                Gizmos.DrawCube(position + halfCellSize, tilemap.cellSize);
+                foreach (Vector3Int position in path)
+                {
+                    Gizmos.color = new Color(1, 0.6f, 1, 0.4f);
+                    Gizmos.DrawCube(position + halfCellSize, tilemap.cellSize);
+                }
             }
         }
     }
