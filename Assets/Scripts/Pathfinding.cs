@@ -114,49 +114,35 @@ public class Pathfinding : MonoBehaviour
 
         Debug.Log("Checking: " + posX + ", " + posY);
 
-        // X boundaries of tilemap
-        int tmBoundsMinX = tilemap.cellBounds.xMin;
-        int tmBoundsMaxX = tilemap.cellBounds.xMax;
-
-        // Y boundaries of tilemap
-        int tmBoundsMinY = tilemap.cellBounds.yMin;
-        int tmBoundsMaxY = tilemap.cellBounds.yMax;
-
-        // Check cells to the right, left, up or down as long as they're within the boundaries of the map
-        int startCheckX = posX - 1 < tmBoundsMinX ? posX : posX - 1;
-        int endCheckX = posX + 1 >= tmBoundsMaxX ? posX : posX + 1;
-        int startCheckY = posY - 1 < tmBoundsMinY ? posY : posY - 1;
-        int endCheckY = posY + 1 >= tmBoundsMaxY ? posY : posY + 1;
-
-        // For now, y and x are evaluated seperately to avoid diagonals paths
-        // Breadth-first treats cells diagonal to the cell currently being checked
-        // as equally viable when plotting the shortest path from one cell to another
-        // leading to awkward/illogical path
-
-        for (int y = startCheckY; y <= endCheckY; y++)
+        // Prioritise checking straight paths before diagonals, y in the first slow of the array, x in second
+        int[,] positions =
         {
-            // Skip the cell whose neighbours we're checking
-            if (y == cell.y && posX == cell.x) { continue; }
+            { 1, 0 }, // up
+            { -1, 0 }, // down
+            { 0, -1}, // left
+            { 0, 1 }, // right
 
-            Vector3Int newPos = new Vector3Int(posX, y, 0);
+            { -1, -1}, // top-left
+            { 1, 1 }, // top-right
+            { -1, -1}, // bottom-left
+            { -1, 1 } // bottom-right
+        };
+
+        for (int i = 0; i < positions.GetLength(0); i++)
+        {
+            // Add the co-ordinates from the position array to co-ordinates of the cell we're currently checking
+            int newX = cell.x + positions[i, 1];
+            int newY = cell.y + positions[i, 0];
+
+            Vector3Int newPos = new Vector3Int(newX, newY, 0);
+            if (tilemap.GetTile(newPos) == null) { continue; }
+
             if (TileIsWalkable(newPos) && !cameFrom.ContainsKey(newPos))
             {
                 searchPerimeter.Add(newPos);
                 cameFrom.Add(newPos, cell);
             }
-        }
-
-        for (int x = startCheckX; x <= endCheckX; x++)
-        {
-            // Skip the cell whose neighbours we're checking
-            if (posY == cell.y && x == cell.x) { continue; }
-
-            Vector3Int newPos = new Vector3Int(x, posY, 0);
-            if (TileIsWalkable(newPos) && !cameFrom.ContainsKey(newPos))
-            {
-                searchPerimeter.Add(newPos);
-                cameFrom.Add(newPos, cell);
-            }
+            
         }
         return false;
     }
