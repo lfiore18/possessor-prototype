@@ -10,6 +10,10 @@ public class EnemyBehaviour : MonoBehaviour
     [SerializeField] [Range(1, 360)] float fovAngle = 45f;
     [SerializeField] [Range(1, 30)] float visionRange = 10f;
 
+    [SerializeField] Pathfinding pathfinding;
+    List<Vector3Int> pathToPlayer;
+    int pathIndex = 0;
+
     GameObject player;
 
     Rigidbody2D rigidBody;
@@ -34,13 +38,16 @@ public class EnemyBehaviour : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        pathToPlayer = pathfinding.CalculatePath(this.transform.position);
+
         currentTarget = player.transform.position;
         Search(currentTarget);
 
         if (alerted)
         {
             Aim(currentTarget);
-            Move();
+            //Move();
+            FollowPath();
         }
     }
 
@@ -100,6 +107,24 @@ public class EnemyBehaviour : MonoBehaviour
         rigidBody.position = new Vector2(deltaX, deltaY);
     }
 
+    private void FollowPath()
+    {
+        // Follow the calculated path to the player
+        if (pathIndex <= pathToPlayer.Count - 1)
+        {
+            var targetPosition = pathToPlayer[pathIndex];
+            var movementThisFrame = movementSpeed * Time.deltaTime;
+
+            transform.position = Vector2.MoveTowards
+                (transform.position, new Vector2(targetPosition.x, targetPosition.y), movementThisFrame);
+
+            if (transform.position == targetPosition)
+            {
+                pathIndex++;
+            }
+        }
+    }
+
     public float GetFovAngle()
     {
         return fovAngle;
@@ -108,5 +133,18 @@ public class EnemyBehaviour : MonoBehaviour
     public float GetVisionRange()
     {
         return visionRange;
+    }
+
+    private void OnDrawGizmos()
+    {
+        var halfCellSize = pathfinding.halfCellSize;
+        if (pathToPlayer != null)
+        {
+            foreach (Vector3Int position in pathToPlayer)
+            {
+                Gizmos.color = new Color(1, 0.6f, 1, 0.4f);
+                Gizmos.DrawCube(position + halfCellSize, halfCellSize*2);
+            }
+        }
     }
 }

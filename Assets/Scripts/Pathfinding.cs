@@ -8,10 +8,7 @@ public class Pathfinding : MonoBehaviour
     [SerializeField]
     Tilemap tilemap;
 
-    [SerializeField]
-    GameObject player;
-
-    Vector3Int playerCellPos;
+    public Vector3 halfCellSize; 
 
     [SerializeField]
     GameObject startObj;
@@ -21,10 +18,7 @@ public class Pathfinding : MonoBehaviour
     Vector3Int startPos;
     Vector3Int targetPos;
 
-
     [Header("Debug Properties")]
-    [SerializeField]
-    bool drawPlayerPos;
     [SerializeField]
     bool drawStartPos;
     [SerializeField]
@@ -45,34 +39,28 @@ public class Pathfinding : MonoBehaviour
     private void Start()
     {
         tilemap = GetComponent<Tilemap>();
+        halfCellSize = tilemap.cellSize / 2;
 
         Debug.Log("tilemap Min X,Y: " + tilemap.cellBounds.xMin + ", " + tilemap.cellBounds.yMin);
         Debug.Log("tilemap Max X,Y: " + tilemap.cellBounds.xMax + ", " + tilemap.cellBounds.yMax);
 
-        if (player == null)
-            player = GameObject.Find("Player");
-
-
-        playerCellPos = tilemap.WorldToCell(player.transform.position);
 
         SetDebugPositions();
         BreadthFirstSearch();
-
     }
 
     private void Update()
     {
-        //playerCellPos = tilemap.WorldToCell(player.transform.position);
         SetDebugPositions();
         BreadthFirstSearch();
     }
 
-    List<Vector3Int> CalculatePath()
+    public List<Vector3Int> CalculatePath(Vector3 targetPos)
     {
         // Trace a path back from the target to the starting position
         List<Vector3Int> path = new List<Vector3Int>();
-
-        Vector3Int lastCell = cameFrom[targetPos];
+        
+        Vector3Int lastCell = cameFrom[tilemap.WorldToCell(targetPos)];
 
         path.Add(lastCell);
         while(lastCell != startPos)
@@ -84,7 +72,8 @@ public class Pathfinding : MonoBehaviour
         return path;
     }
 
-
+    // TODO: Currently still does not handle diagonals with equal weight,
+    // consider implementing Djikstras algorithm instead
     void BreadthFirstSearch()
     {
         // Clear incase any data is left over from previous search
@@ -122,16 +111,25 @@ public class Pathfinding : MonoBehaviour
         // Prioritise checking straight paths before diagonals, y in the first slow of the array, x in second
         int[,] positions =
         {
+            { 0, 1 }, // right
+            { 0, -1 }, // left
             { 1, 0 }, // up
             { -1, 0 }, // down
-            { 0, -1 }, // left
-            { 0, 1 }, // right
-
-            { -1, -1}, // top-left
+            
             { 1, 1 }, // top-right
-            { -1, -1}, // bottom-left
-            { -1, 1 } // bottom-right
+            { -1, -1}, // top-left
+            { -1, 1 }, // bottom-right
+            { -1, -1} // bottom-left
         };
+
+
+        List<Vector3Int> neighbours = GetValidNeighbours(cell);
+
+
+        bool topRightBlocked = false;
+        bool topLeftBlocked = false;
+        bool bottomLeftBlocked = false;
+        bool bottomRightBlocked = false;
 
         for (int i = 0; i < positions.GetLength(0); i++)
         {
@@ -142,6 +140,7 @@ public class Pathfinding : MonoBehaviour
             Vector3Int newPos = new Vector3Int(newX, newY, 0);
             if (tilemap.GetTile(newPos) == null) { continue; }
 
+
             if (TileIsWalkable(newPos) && !cameFrom.ContainsKey(newPos))
             {
                 searchPerimeter.Add(newPos);
@@ -151,6 +150,84 @@ public class Pathfinding : MonoBehaviour
             // if (newPos == targetPos) return true;
         }
         return false;
+    }
+
+    List<Vector3Int> GetValidNeighbours(Vector3Int cell)
+    {
+        List<Vector3Int> neighbours = new List<Vector3Int>();
+
+        int y = cell.y;
+        int x = cell.x;
+
+        int tMinX = tilemap.cellBounds.xMin;
+        int tMaxX = tilemap.cellBounds.xMax;
+
+        int tMinY = tilemap.cellBounds.yMin;
+        int tMaxY = tilemap.cellBounds.yMax;
+/*
+        int right = x + 1 >= tMaxX ? x : x + 1;
+        int left = x - 1 < tMinX ? x : x - 1;
+        int up = y + 1 >= tMaxY ? y : y + 1;
+        int down = y - 1 < tMinY ? y : y - 1;*/
+
+        bool topRightBlocked = false;
+        bool topLeftBlocked = false;
+        bool bottomLeftBlocked = false;
+        bool bottomRightBlocked = false;
+
+        // Straight directions
+
+        // Check cell right is within bounds
+        if (x + 1 < tMaxX)
+        {
+            neighbours.Add(new Vector3Int(x + 1, y, 0));
+        }
+        else
+        {
+            topRightBlocked = true;
+            bottomRightBlocked = true;
+        }
+
+        // Check cell left is within bounds
+        if (x - 1 >= tMinX)
+        {
+            neighbours.Add(new Vector3Int(x - 1, y, 0));
+        } 
+        else
+        {
+            topLeftBlocked = true;
+            bottomLeftBlocked = true;
+        }
+
+        // Check cell above is within bounds
+        if (y + 1 < tMaxY)
+        {
+            neighbours.Add(new Vector3Int(x, y + 1, 0));
+        }
+        else
+        {
+            topLeftBlocked = true;
+            topRightBlocked = true;
+        }
+
+        // Check cell below is within bounds
+        if (y - 1 >= tMinY)
+        {
+            neighbours.Add(new Vector3Int(x, y - 1, 0));
+        }
+        else
+        {
+            bottomRightBlocked = true;
+            bottomLeftBlocked = true;
+        }
+
+        // Diagonal directions - only add under the condition that they are within bounds
+        if (!topRightBlocked) neighbours.Add(new Vector3Int(x + 1, y + 1, 0));
+        if (!topLeftBlocked) neighbours.Add(new Vector3Int(x - 1, y + 1, 0));
+        if (!bottomRightBlocked) neighbours.Add(new Vector3Int(x + 1, y - 1, 0));
+        if (!bottomLeftBlocked) neighbours.Add(new Vector3Int(x - 1, y - 1, 0));
+
+        return neighbours;
     }
 
     bool TileIsWalkable(Vector3Int position)
@@ -184,18 +261,9 @@ public class Pathfinding : MonoBehaviour
 
 
     private void OnDrawGizmos()
-    {
-        var halfCellSize = tilemap.cellSize / 2;
-
-        SetDebugPositions();
-
+    {   
         if (Application.isPlaying)
         {
-            if (drawPlayerPos)
-            {
-                Gizmos.color = Color.cyan;
-                Gizmos.DrawCube(playerCellPos + halfCellSize, tilemap.cellSize);
-            }
 
             if (drawStartPos)
             {
@@ -222,16 +290,6 @@ public class Pathfinding : MonoBehaviour
                 {
                     Gizmos.color = new Color(0, 1, 1, 0.2f);
                     Gizmos.DrawCube(entry.Key + halfCellSize, tilemap.cellSize);
-                }
-            }
-
-            List<Vector3Int> path = CalculatePath();
-            if (path != null)
-            {
-                foreach (Vector3Int position in path)
-                {
-                    Gizmos.color = new Color(1, 0.6f, 1, 0.4f);
-                    Gizmos.DrawCube(position + halfCellSize, tilemap.cellSize);
                 }
             }
         }
