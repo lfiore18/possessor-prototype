@@ -11,7 +11,7 @@ public class EnemyBehaviour : MonoBehaviour
     [SerializeField] [Range(1, 30)] float visionRange = 10f;
 
     [SerializeField] Pathfinding pathfinding;
-    List<Vector3Int> pathToPlayer;
+    [SerializeField]List<Vector3Int> pathToPlayer;
     int pathIndex = 0;
 
     GameObject player;
@@ -38,8 +38,6 @@ public class EnemyBehaviour : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        pathToPlayer = pathfinding.CalculatePath(this.transform.position);
-
         currentTarget = player.transform.position;
         Search(currentTarget);
 
@@ -47,6 +45,11 @@ public class EnemyBehaviour : MonoBehaviour
         {
             Aim(currentTarget);
             //Move();
+            
+            if (pathfinding.PlayerPositionHasChanged())
+                pathToPlayer = pathfinding.CalculatePath(this.transform.position);
+            
+
             FollowPath();
         }
     }
@@ -81,7 +84,6 @@ public class EnemyBehaviour : MonoBehaviour
             {
                 //Debug.Log("Sighted!");
                 alerted = true;
-
                 GetComponentInChildren<fieldOfView>().SetColour();
             }
         }
@@ -116,11 +118,13 @@ public class EnemyBehaviour : MonoBehaviour
             var movementThisFrame = movementSpeed * Time.deltaTime;
 
             transform.position = Vector2.MoveTowards
-                (transform.position, new Vector2(targetPosition.x, targetPosition.y), movementThisFrame);
+                (transform.position, new Vector2(targetPosition.x + 0.5f, targetPosition.y + 0.5f), movementThisFrame);
 
-            if (transform.position == targetPosition)
+            if (pathfinding.GetCellPosition(transform.position) == targetPosition)
             {
-                pathIndex++;
+                pathToPlayer.Remove(targetPosition);
+                /*                Debug.Log("Reached: " + targetPosition);
+                                pathIndex++;*/
             }
         }
     }

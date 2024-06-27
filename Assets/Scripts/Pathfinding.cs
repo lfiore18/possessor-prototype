@@ -12,17 +12,12 @@ public class Pathfinding : MonoBehaviour
 
     [SerializeField]
     GameObject startObj;
-    [SerializeField]
-    GameObject targetObj;
 
     Vector3Int startPos;
-    Vector3Int targetPos;
 
     [Header("Debug Properties")]
     [SerializeField]
     bool drawStartPos;
-    [SerializeField]
-    bool drawTargetPos;
     [SerializeField]
     bool dontDestroyDebugObjsOnStart; // incase I'm using enemies or player obj to test pathfinding
 
@@ -44,15 +39,19 @@ public class Pathfinding : MonoBehaviour
         Debug.Log("tilemap Min X,Y: " + tilemap.cellBounds.xMin + ", " + tilemap.cellBounds.yMin);
         Debug.Log("tilemap Max X,Y: " + tilemap.cellBounds.xMax + ", " + tilemap.cellBounds.yMax);
 
-
-        SetDebugPositions();
+        // Set the initial positions of starting and target points of the breadth first search
+        // Currently, not using "target" points, just scanning the entire tilemap and returning a distance field
+        SetStartPosition();
         BreadthFirstSearch();
     }
 
     private void Update()
     {
-        SetDebugPositions();
-        BreadthFirstSearch();
+        if (PlayerPositionHasChanged())
+        {
+            SetStartPosition();
+            BreadthFirstSearch();
+        }
     }
 
     public List<Vector3Int> CalculatePath(Vector3 targetPos)
@@ -88,8 +87,11 @@ public class Pathfinding : MonoBehaviour
         // Set the starting tile's "came from" position to itself for now
         cameFrom.Add(startTilePos, startTilePos);
 
+        // NOTE: Currently unused, we do not end early, we create a distance field of the tilemap
         bool foundTarget = false;
 
+        // For testing/debug purposes, can limit the loop count here
+        // otherwise, BFS will run until it's exhausted the search perimeter
         int count = turnOnDebugLoopLimit ? limitLoopCount : searchPerimeter.Count; 
         while (count > 0 && !foundTarget)
         {
@@ -106,47 +108,20 @@ public class Pathfinding : MonoBehaviour
         int posX = cell.x;
         int posY = cell.y;
 
-        Debug.Log("Checking: " + posX + ", " + posY);
-
-        // Prioritise checking straight paths before diagonals, y in the first slow of the array, x in second
-        int[,] positions =
-        {
-            { 0, 1 }, // right
-            { 0, -1 }, // left
-            { 1, 0 }, // up
-            { -1, 0 }, // down
-            
-            { 1, 1 }, // top-right
-            { -1, -1}, // top-left
-            { -1, 1 }, // bottom-right
-            { -1, -1} // bottom-left
-        };
-
+        //Debug.Log("Checking: " + posX + ", " + posY);
 
         List<Vector3Int> neighbours = GetValidNeighbours(cell);
 
 
-        bool topRightBlocked = false;
-        bool topLeftBlocked = false;
-        bool bottomLeftBlocked = false;
-        bool bottomRightBlocked = false;
-
-        for (int i = 0; i < positions.GetLength(0); i++)
+        foreach(Vector3Int neighbour in neighbours)
         {
-            // Add the co-ordinates from the position array to co-ordinates of the cell we're currently checking
-            int newX = cell.x + positions[i, 1];
-            int newY = cell.y + positions[i, 0];
-
-            Vector3Int newPos = new Vector3Int(newX, newY, 0);
-            if (tilemap.GetTile(newPos) == null) { continue; }
-
-
-            if (TileIsWalkable(newPos) && !cameFrom.ContainsKey(newPos))
+            if (!cameFrom.ContainsKey(neighbour))
             {
-                searchPerimeter.Add(newPos);
-                cameFrom.Add(newPos, cell);
+                searchPerimeter.Add(neighbour);
+                cameFrom.Add(neighbour, cell);
             }
             
+            // Line below would end the breadthfirst search early
             // if (newPos == targetPos) return true;
         }
         return false;
@@ -159,28 +134,19 @@ public class Pathfinding : MonoBehaviour
         int y = cell.y;
         int x = cell.x;
 
-        int tMinX = tilemap.cellBounds.xMin;
-        int tMaxX = tilemap.cellBounds.xMax;
-
-        int tMinY = tilemap.cellBounds.yMin;
-        int tMaxY = tilemap.cellBounds.yMax;
-/*
-        int right = x + 1 >= tMaxX ? x : x + 1;
-        int left = x - 1 < tMinX ? x : x - 1;
-        int up = y + 1 >= tMaxY ? y : y + 1;
-        int down = y - 1 < tMinY ? y : y - 1;*/
-
         bool topRightBlocked = false;
         bool topLeftBlocked = false;
         bool bottomLeftBlocked = false;
         bool bottomRightBlocked = false;
 
+
+        Vector3Int newPos = new Vector3Int(x + 1, y, 0);
         // Straight directions
 
         // Check cell right is within bounds
-        if (x + 1 < tMaxX)
+        if (TileIsWalkable(newPos))
         {
-            neighbours.Add(new Vector3Int(x + 1, y, 0));
+            neighbours.Add(newPos);
         }
         else
         {
@@ -188,10 +154,11 @@ public class Pathfinding : MonoBehaviour
             bottomRightBlocked = true;
         }
 
+        newPos.x = x - 1;
         // Check cell left is within bounds
-        if (x - 1 >= tMinX)
+        if (TileIsWalkable(newPos))
         {
-            neighbours.Add(new Vector3Int(x - 1, y, 0));
+            neighbours.Add(newPos);
         } 
         else
         {
@@ -199,10 +166,12 @@ public class Pathfinding : MonoBehaviour
             bottomLeftBlocked = true;
         }
 
+        newPos.x = x;
+        newPos.y = y + 1;
         // Check cell above is within bounds
-        if (y + 1 < tMaxY)
+        if (TileIsWalkable(newPos))
         {
-            neighbours.Add(new Vector3Int(x, y + 1, 0));
+            neighbours.Add(newPos);
         }
         else
         {
@@ -210,10 +179,11 @@ public class Pathfinding : MonoBehaviour
             topRightBlocked = true;
         }
 
+        newPos.y = y - 1;
         // Check cell below is within bounds
-        if (y - 1 >= tMinY)
+        if (TileIsWalkable(newPos))
         {
-            neighbours.Add(new Vector3Int(x, y - 1, 0));
+            neighbours.Add(newPos);
         }
         else
         {
@@ -222,21 +192,48 @@ public class Pathfinding : MonoBehaviour
         }
 
         // Diagonal directions - only add under the condition that they are within bounds
-        if (!topRightBlocked) neighbours.Add(new Vector3Int(x + 1, y + 1, 0));
-        if (!topLeftBlocked) neighbours.Add(new Vector3Int(x - 1, y + 1, 0));
-        if (!bottomRightBlocked) neighbours.Add(new Vector3Int(x + 1, y - 1, 0));
-        if (!bottomLeftBlocked) neighbours.Add(new Vector3Int(x - 1, y - 1, 0));
+        newPos.x = x + 1;
+        newPos.y = y + 1;
+        if (!topRightBlocked && TileIsWalkable(newPos)) neighbours.Add(newPos);
+
+        newPos.x = x - 1;
+        newPos.y = y + 1;
+        if (!topLeftBlocked && TileIsWalkable(newPos)) neighbours.Add(newPos);
+
+        newPos.x = x + 1;
+        newPos.y = y - 1;
+        if (!bottomRightBlocked && TileIsWalkable(newPos)) neighbours.Add(newPos);
+
+        newPos.x = x - 1;
+        newPos.y = y - 1;
+        if (!bottomLeftBlocked && TileIsWalkable(newPos)) neighbours.Add(newPos);
 
         return neighbours;
     }
 
     bool TileIsWalkable(Vector3Int position)
     {
+        int tMinX = tilemap.cellBounds.xMin;
+        int tMaxX = tilemap.cellBounds.xMax;
+
+        int tMinY = tilemap.cellBounds.yMin;
+        int tMaxY = tilemap.cellBounds.yMax;
+
+        if (position.x + 1 >= tMaxX) return false;
+        if (position.x - 1 < tMinX) return false;
+        if (position.y + 1 >= tMaxY) return false;
+        if (position.y - 1 < tMinY) return false;
+
         TileBase tile = tilemap.GetTile(position);
         return tile is TerrainTile terrainTile && terrainTile.isWalkable;
     }
 
     void SetDebugPositions()
+    {
+        SetStartPosition();
+    }
+
+    void SetStartPosition()
     {
         if (startObj != null)
         {
@@ -245,20 +242,28 @@ public class Pathfinding : MonoBehaviour
         }
         else
         {
-            Debug.LogError("targetObj is null! No target position set!");
-        }
-
-        if (targetObj != null)
-        {
-            targetPos = tilemap.WorldToCell(targetObj.transform.position);
-            if (!dontDestroyDebugObjsOnStart) Destroy(targetObj);
-        }
-        else
-        {
-            Debug.LogError("targetObj is null! No target position set!");
+            Debug.LogError("startObj is null! No start position set!");
         }
     }
 
+    public bool PlayerPositionHasChanged()
+    {
+        Vector3Int playerCurrentPos = tilemap.WorldToCell(startObj.transform.position);
+
+        bool positionHasChanged = startPos != playerCurrentPos;        
+
+        if (positionHasChanged)
+        {
+            Debug.Log("Player position has Changed");
+        }
+
+        return positionHasChanged;   
+    }
+
+    public Vector3Int GetCellPosition(Vector3 position)
+    {
+        return tilemap.WorldToCell(position);
+    }
 
     private void OnDrawGizmos()
     {   
@@ -271,17 +276,11 @@ public class Pathfinding : MonoBehaviour
                 Gizmos.DrawCube(startPos + halfCellSize, tilemap.cellSize);
             }
 
-            if (drawTargetPos)
+            /*foreach (Vector3Int cell in searchPerimeter)
             {
-                Gizmos.color = Color.red;
-                Gizmos.DrawCube(targetPos + halfCellSize, tilemap.cellSize);
-            }
-
-            /*            foreach(Vector3Int cell in searchPerimeter)
-                        {
-                            Gizmos.color = new Color(0, 1, 1, 0.4f);
-                            Gizmos.DrawCube(cell + halfCellSize, tilemap.cellSize);
-                        }*/
+                Gizmos.color = new Color(0, 1, 1, 0.4f);
+                Gizmos.DrawCube(cell + halfCellSize, tilemap.cellSize);
+            }*/
 
             if (cameFrom != null)
             {
