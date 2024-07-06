@@ -52,9 +52,11 @@ public class EnemyBehaviour : MonoBehaviour
                 pathToPlayer = pathfinding.CalculatePath(this.transform.position);
             
             FollowPlayer();
+        } 
+        else
+        {
+            FollowPath();
         }
-
-        FollowPath();
     }
 
     private void Search(Vector2 target)
@@ -131,16 +133,21 @@ public class EnemyBehaviour : MonoBehaviour
     {
         //TODO: Fill this in
 
-        if (pathToPlayer.Count >= 1)
+        if (pathIndex <= patrolPath.patrolPoints.Count - 1)
         {
-            var targetPosition = pathToPlayer[pathIndex];
+            var targetPosition = patrolPath.patrolPoints[pathIndex];
             var movementThisFrame = movementSpeed * Time.fixedDeltaTime;
 
-            rigidBody.position = Vector2.MoveTowards
-                (transform.position, new Vector2(targetPosition.x + 0.5f, targetPosition.y + 0.5f), movementThisFrame);
+            if (patrolPath.lookInMovingDirection)
+            {
+                Aim(patrolPath.patrolPoints[pathIndex]);
+            }
 
-            if (pathfinding.GetCellPosition(transform.position) == targetPosition)
-                pathToPlayer.Remove(targetPosition);
+            rigidBody.position = Vector2.MoveTowards
+                (transform.position, new Vector2(targetPosition.x, targetPosition.y), movementThisFrame);
+
+            if (Vector2.Distance(transform.position, targetPosition) < 0.1f)
+                pathIndex++;
         }
     }
 
