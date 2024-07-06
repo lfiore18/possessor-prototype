@@ -8,7 +8,7 @@ public class Pathfinding : MonoBehaviour
     [SerializeField]
     Tilemap tilemap;
 
-    public Vector3 halfCellSize; 
+    public Vector3 halfCellSize { get; private set; } 
 
     [SerializeField]
     GameObject startObj;
@@ -34,6 +34,7 @@ public class Pathfinding : MonoBehaviour
     private void Start()
     {
         tilemap = GetComponent<Tilemap>();
+        tilemap.CompressBounds();
         halfCellSize = tilemap.cellSize / 2;
 
         Debug.Log("tilemap Min X,Y: " + tilemap.cellBounds.xMin + ", " + tilemap.cellBounds.yMin);

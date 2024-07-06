@@ -62,9 +62,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6917a09028edd8f45826beb540c943ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movementSpeed: 0.2
-  fovAngle: 60
-  visionRange: 4
+  movementSpeed: 2.66
+  fovAngle: 30
+  visionRange: 8
+  pathfinding: {fileID: 0}
+  pathToPlayer: []
 --- !u!212 &2639374738437276624
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -164,6 +166,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: FOV Visualiser
       objectReference: {fileID: 0}
+    - target: {fileID: 9019426846089182256, guid: a3d88daf7f166f147bce08b6d81d6815,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: f7728fe85617fe74e83b4bed87115b03, type: 2}
     - target: {fileID: 9019426846089182258, guid: a3d88daf7f166f147bce08b6d81d6815,
         type: 3}
       propertyPath: m_RootOrder
@@ -222,7 +229,22 @@ PrefabInstance:
     - target: {fileID: 9019426846089182261, guid: a3d88daf7f166f147bce08b6d81d6815,
         type: 3}
       propertyPath: meshResolution
-      value: 15
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 9019426846089182261, guid: a3d88daf7f166f147bce08b6d81d6815,
+        type: 3}
+      propertyPath: meshAlertColor.b
+      value: 0.5729352
+      objectReference: {fileID: 0}
+    - target: {fileID: 9019426846089182261, guid: a3d88daf7f166f147bce08b6d81d6815,
+        type: 3}
+      propertyPath: meshAlertColor.g
+      value: 0.5729352
+      objectReference: {fileID: 0}
+    - target: {fileID: 9019426846089182261, guid: a3d88daf7f166f147bce08b6d81d6815,
+        type: 3}
+      propertyPath: meshAlertColor.r
+      value: 0.9716981
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a3d88daf7f166f147bce08b6d81d6815, type: 3}

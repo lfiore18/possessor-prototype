@@ -11,11 +11,13 @@ public class EnemyBehaviour : MonoBehaviour
     [SerializeField] [Range(1, 30)] float visionRange = 10f;
 
     [SerializeField] Pathfinding pathfinding;
-    [SerializeField]List<Vector3Int> pathToPlayer;
+    [SerializeField] PatrolPath patrolPath;
     int pathIndex = 0;
 
-    GameObject player;
+    List<Vector3Int> pathToPlayer;
+    
 
+    GameObject player;
     Rigidbody2D rigidBody;
 
     Vector2 lookDirection;
@@ -49,9 +51,10 @@ public class EnemyBehaviour : MonoBehaviour
             if (pathfinding.PlayerPositionHasChanged())
                 pathToPlayer = pathfinding.CalculatePath(this.transform.position);
             
-
-            FollowPath();
+            FollowPlayer();
         }
+
+        FollowPath();
     }
 
     private void Search(Vector2 target)
@@ -59,19 +62,17 @@ public class EnemyBehaviour : MonoBehaviour
         // If the distance between the player and the enemy is less than the vision range of the enemy
         // And angle between the direction the enemy is looking and the player is less than vision cone angle
         // Enemy alerted!
-
+        
         distanceFromPlayer = Vector2.Distance(target, transform.position);
         lookDirection = target - rigidBody.position;
 
         float angleFromPlayer = Vector2.Angle(transform.up, lookDirection);
 
         ContactFilter2D contactFilter = new ContactFilter2D();
-
         contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
 
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, currentTarget, distanceFromPlayer, LayerMask.GetMask("Physical Objects", "Player"));
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Physical Objects", "Player"));
         Debug.DrawLine(rigidBody.position, currentTarget, Color.red);
-        //Debug.DrawLine(rigidBody.position, hit.point);
 
         if (hit.collider != null)
         {
@@ -109,23 +110,37 @@ public class EnemyBehaviour : MonoBehaviour
         rigidBody.position = new Vector2(deltaX, deltaY);
     }
 
-    private void FollowPath()
+    private void FollowPlayer()
     {
         // Follow the calculated path to the player
-        if (pathIndex <= pathToPlayer.Count - 1)
+        // TODO: Remove pathIndex, it's never used
+        if (pathToPlayer.Count >= 1)
+        {
+            var targetPosition = pathToPlayer[0];
+            var movementThisFrame = movementSpeed * Time.fixedDeltaTime;
+
+            rigidBody.position = Vector2.MoveTowards
+                (transform.position, new Vector2(targetPosition.x + 0.5f, targetPosition.y + 0.5f), movementThisFrame);
+
+            if (pathfinding.GetCellPosition(transform.position) == targetPosition)            
+                pathToPlayer.Remove(targetPosition);         
+        }
+    }
+
+    private void FollowPath()
+    {
+        //TODO: Fill this in
+
+        if (pathToPlayer.Count >= 1)
         {
             var targetPosition = pathToPlayer[pathIndex];
-            var movementThisFrame = movementSpeed * Time.deltaTime;
+            var movementThisFrame = movementSpeed * Time.fixedDeltaTime;
 
-            transform.position = Vector2.MoveTowards
+            rigidBody.position = Vector2.MoveTowards
                 (transform.position, new Vector2(targetPosition.x + 0.5f, targetPosition.y + 0.5f), movementThisFrame);
 
             if (pathfinding.GetCellPosition(transform.position) == targetPosition)
-            {
                 pathToPlayer.Remove(targetPosition);
-                /*                Debug.Log("Reached: " + targetPosition);
-                                pathIndex++;*/
-            }
         }
     }
 

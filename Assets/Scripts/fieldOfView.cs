@@ -24,7 +24,7 @@ public class fieldOfView : MonoBehaviour
     {
         mesh = new Mesh();
         rend = GetComponent<MeshRenderer>();
-
+        Debug.Log(rend.sortingLayerName);
 
         GetComponent<MeshFilter>().mesh = mesh;
         crosshair = FindObjectOfType<Crosshair>();
