@@ -72,18 +72,12 @@ public class fieldOfView : MonoBehaviour
         // For each step, a ray will be fired at "viewRange" distance away from the 1st vertex, at an angle
 
         rayCastOrigin = Vector2.zero;
-        Vector3 currentRotation = transform.eulerAngles;
-        //Debug.Log(currentRotation);
         angleStart = 90 - (angleFov / 2);
-        //Debug.Log(angleStart);
-        //Debug.Log("FOV starts at angle " + angleStart);
 
         vertices = new Vector3[3 + (meshResolution -1)]; // we start with 3, the minimum number of vertices
 
         float angleStep = angleFov / meshResolution;
         float angleCurr = angleStart;
-
-        //Debug.Log("vertices array length is " + vertices.Length);
 
         vertices[0] = rayCastOrigin;
 
@@ -127,6 +121,13 @@ public class fieldOfView : MonoBehaviour
         rend.material.SetColor("_Color", meshAlertColor); 
     }
 
+    Vector3 AngleToVector(float angle)
+    {
+        float angleInRad = angle * (Mathf.PI / 180f);
+
+        return new Vector3(Mathf.Cos(angleInRad), Mathf.Sin(angleInRad));
+    }
+
     private void OnDrawGizmos()
     {
         int rayCount = meshResolution - 1;
@@ -154,10 +155,5 @@ public class fieldOfView : MonoBehaviour
         Gizmos.DrawRay(transform.position, AngleToVector(angleFov) * (hit.collider != null ? hit.distance : viewDistance ));
     }
 
-    Vector3 AngleToVector(float angle)
-    {
-        float angleInRad = angle * (Mathf.PI / 180f);
 
-        return new Vector3(Mathf.Cos(angleInRad), Mathf.Sin(angleInRad));
-    }
 }

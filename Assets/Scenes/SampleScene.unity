@@ -3632,9 +3632,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   patrolPoints:
-  - {x: -4.616332, y: 4.69508, z: 0}
-  - {x: -4.5243196, y: 0.021178901, z: 0}
-  - {x: -4.5454664, y: -2.2088068, z: 0}
+  - {x: -4.3873367, y: 1.1074882, z: 0}
+  - {x: -4.4225445, y: -4.558725, z: 0}
+  - {x: 6.2681975, y: -4.5750904, z: 0}
   lookInMovingDirection: 1
   pathColor: {r: 0.013883919, g: 0.23092937, b: 0.9811321, a: 0.9019608}
   sphereRadius: 0.5
