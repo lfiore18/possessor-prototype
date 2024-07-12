@@ -4,7 +4,7 @@ using System.Collections;
 public class fieldOfView : MonoBehaviour
 {
     [SerializeField] [Range(1, 20)] int meshResolution = 3;
-    [SerializeField] Color meshAlertColor;
+    [SerializeField] public Color meshAlertColor;
     EnemyBehaviour parent;
 
     // parameters determined by parent properties
@@ -71,10 +71,10 @@ public class fieldOfView : MonoBehaviour
         // The smoothness of the arc will be determined by the number of steps in between vertices 2 and 3
         // For each step, a ray will be fired at "viewRange" distance away from the 1st vertex, at an angle
 
-        rayCastOrigin = Vector2.zero;
+        rayCastOrigin = Vector2.zero;      
         angleStart = 90 - (angleFov / 2);
 
-        vertices = new Vector3[3 + (meshResolution -1)]; // we start with 3, the minimum number of vertices
+        vertices = new Vector3[3 + (meshResolution - 1)]; // we start with 3, the minimum number of vertices
 
         float angleStep = angleFov / meshResolution;
         float angleCurr = angleStart;
@@ -84,13 +84,13 @@ public class fieldOfView : MonoBehaviour
         RaycastHit2D hit;
         for (int i = 1; i < vertices.Length - 1; i++)
         {
-            hit = Physics2D.Raycast(transform.parent.position, AngleToVector(angleCurr), viewDistance, LayerMask.GetMask("Physical Objects", "Player"));
+            hit = Physics2D.Raycast(transform.parent.position, AngleToVector(angleCurr), viewDistance, LayerMask.GetMask("Tilemap, Physical Objects", "Player"));
             Vector2 vertex = (Vector2)AngleToVector(angleCurr) * (hit.collider != null ? hit.distance : viewDistance);
             vertices[i] = vertex;
 
             angleCurr += angleStep;
         }
-        hit = Physics2D.Raycast(transform.parent.position, AngleToVector(angleCurr), viewDistance, LayerMask.GetMask("Physical Objects", "Player"));
+        hit = Physics2D.Raycast(transform.parent.position, AngleToVector(angleCurr), viewDistance, LayerMask.GetMask("Tilemap, Physical Objects", "Player"));
         vertices[vertices.Length - 1] = AngleToVector(angleStart + angleFov) * (hit.collider != null ? hit.distance : viewDistance);
 
         int numOfTris = meshResolution * 3;
@@ -98,7 +98,6 @@ public class fieldOfView : MonoBehaviour
         triangles = new int[numOfTris];
 
         int triangleIncrease = 0;
-
         for (int i = 0; i < numOfTris; i += 3)
         {
             triangles[i] = 0;
@@ -116,9 +115,9 @@ public class fieldOfView : MonoBehaviour
         mesh.triangles = triangles;
     }
 
-    public void SetColour()
+    public void SetColour(Color color)
     {
-        rend.material.SetColor("_Color", meshAlertColor); 
+        rend.material.SetColor("_Color", color); 
     }
 
     Vector3 AngleToVector(float angle)

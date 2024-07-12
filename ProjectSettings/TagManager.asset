@@ -18,9 +18,9 @@ TagManager:
   - Enemy
   - Player
   - Physical Objects
-  - 
-  - 
-  - 
+  - Tilemap
+  - Doors
+  - Triggers
   - 
   - 
   - 

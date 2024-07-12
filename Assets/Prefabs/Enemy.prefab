@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2639374738437276625}
   - component: {fileID: 2639374738437276626}
   - component: {fileID: 2932765866404798857}
+  - component: {fileID: 4722528887776579810}
   - component: {fileID: 2639374738437276624}
   - component: {fileID: 2639374738437276638}
   - component: {fileID: 2639374738437276639}
@@ -66,7 +67,20 @@ MonoBehaviour:
   fovAngle: 30
   visionRange: 8
   pathfinding: {fileID: 0}
-  pathToPlayer: []
+  patrolPath: {fileID: 0}
+--- !u!114 &4722528887776579810
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2639374738437276637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c73758c7fa7d404c99d4e069bb1ef38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  areaAccessLevel: 2
 --- !u!212 &2639374738437276624
 SpriteRenderer:
   m_ObjectHideFlags: 0

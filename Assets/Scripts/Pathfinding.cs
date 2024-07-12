@@ -66,6 +66,7 @@ public class Pathfinding : MonoBehaviour
         while(lastCell != startPos)
         {
             lastCell = cameFrom[lastCell];
+
             path.Add(lastCell);
         }
 
@@ -106,13 +107,7 @@ public class Pathfinding : MonoBehaviour
 
     bool CheckNeighbourCells(Vector3Int cell)
     {
-        int posX = cell.x;
-        int posY = cell.y;
-
-        //Debug.Log("Checking: " + posX + ", " + posY);
-
         List<Vector3Int> neighbours = GetValidNeighbours(cell);
-
 
         foreach(Vector3Int neighbour in neighbours)
         {

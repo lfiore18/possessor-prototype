@@ -3,8 +3,9 @@ using UnityEngine;
 
 public class PatrolPath : MonoBehaviour
 {
-    public List<Vector3> patrolPoints = new List<Vector3>();
+    public List<Vector3> patrolPoints;
     public bool lookInMovingDirection = false;
+    public bool loopPatrol = false;
     
     [Header("Editor-Only Properties")]
     public Color pathColor = Color.green;

@@ -7,13 +7,17 @@ public class EnemyBehaviour : MonoBehaviour
     [SerializeField] float movementSpeed = 2f;
 
     // vision parameters
-    [SerializeField] [Range(1, 360)] float fovAngle = 45f;
+    [SerializeField] [Range(1, 360)] float fovAngle = 30f;
     [SerializeField] [Range(1, 30)] float visionRange = 10f;
 
     [SerializeField] Pathfinding pathfinding;
     [SerializeField] PatrolPath patrolPath;
-    int pathIndex = 0;
 
+    bool reversePath = false;
+    bool patrolRoutineIsRunning = false;
+    int pathIndex = 0;
+    Coroutine patrolCR;
+    
     List<Vector3Int> pathToPlayer;
     
 
@@ -30,6 +34,7 @@ public class EnemyBehaviour : MonoBehaviour
 
     bool alerted = false;
 
+
     // Start is called before the first frame update
     void Start()
     {
@@ -45,17 +50,32 @@ public class EnemyBehaviour : MonoBehaviour
 
         if (alerted)
         {
+            // Stop the patrol coroutine
+            if (patrolRoutineIsRunning)
+            {
+                StopCoroutine(patrolCR);
+                patrolRoutineIsRunning = false;
+            }
+            
             Aim(currentTarget);
             //Move();
             
             if (pathfinding.PlayerPositionHasChanged())
                 pathToPlayer = pathfinding.CalculatePath(this.transform.position);
-            
-            FollowPlayer();
+
+            // If the enemy reaches the path without having reached the player, enemy is no longer alerted
+            // this accounts for if the player has reached an area that is currently in accessible
+            if (pathToPlayer.Count > 0)
+                FollowPlayer();
+            else
+                alerted = false;
         } 
         else
         {
-            FollowPath();
+            if (!patrolRoutineIsRunning)
+            {
+                patrolCR = StartCoroutine(MoveAndWait());
+            }
         }
     }
 
@@ -73,7 +93,7 @@ public class EnemyBehaviour : MonoBehaviour
         ContactFilter2D contactFilter = new ContactFilter2D();
         contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
 
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Physical Objects", "Player"));
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Tilemap", "Physical Objects", "Player"));
         Debug.DrawLine(rigidBody.position, currentTarget, Color.red);
 
         if (hit.collider != null)
@@ -81,14 +101,20 @@ public class EnemyBehaviour : MonoBehaviour
             //Debug.Log("Raycast Hit " + hit.collider.name);
         }
 
-        if (distanceFromPlayer <= visionRange && angleFromPlayer <= fovAngle)
+        // fovAngle divided in two since the enemy is the angle spread across his left/right sides
+        // TODO: Change this so that it checks to see if the player's collider is within fovAngle
+        if (distanceFromPlayer <= visionRange && angleFromPlayer <= (fovAngle / 2))
         {
             if (hit.collider != null && hit.collider.name == "Player")
             {
                 //Debug.Log("Sighted!");
                 alerted = true;
-                GetComponentInChildren<fieldOfView>().SetColour();
-            }
+                GetComponentInChildren<fieldOfView>().SetColour(Color.red);
+            } 
+        }
+        else
+        {
+            GetComponentInChildren<fieldOfView>().SetColour(Color.grey);
         }
     }
 
@@ -115,11 +141,24 @@ public class EnemyBehaviour : MonoBehaviour
     private void FollowPlayer()
     {
         // Follow the calculated path to the player
-        // TODO: Remove pathIndex, it's never used
+
+        if (pathToPlayer == null)
+            pathToPlayer = pathfinding.CalculatePath(this.transform.position);
+
         if (pathToPlayer.Count >= 1)
         {
             var targetPosition = pathToPlayer[0];
             var movementThisFrame = movementSpeed * Time.fixedDeltaTime;
+
+            Vector2 pos = new Vector2(targetPosition.x + 0.5f, targetPosition.y + 0.5f);
+
+            // If a door has shut in the way of the path, remove the rest of the path
+            // TODO: This almost certainly will need to be updated to become more robust
+            if (Physics2D.OverlapPoint(pos, LayerMask.GetMask("Doors")))
+            {
+                pathToPlayer.RemoveRange(pathToPlayer.IndexOf(targetPosition), pathToPlayer.Count);
+                return;
+            }
 
             rigidBody.position = Vector2.MoveTowards
                 (transform.position, new Vector2(targetPosition.x + 0.5f, targetPosition.y + 0.5f), movementThisFrame);
@@ -129,26 +168,67 @@ public class EnemyBehaviour : MonoBehaviour
         }
     }
 
-    private void FollowPath()
-    {
-        //TODO: Fill this in
-
-        if (pathIndex <= patrolPath.patrolPoints.Count - 1)
+    /*    private void FollowPath()
         {
+            int targetIndex = reversePath ? 0 : patrolPath.patrolPoints.Count - 1;
+            int indexOffset = reversePath ? -1 : 1;
+
             var targetPosition = patrolPath.patrolPoints[pathIndex];
             var movementThisFrame = movementSpeed * Time.fixedDeltaTime;
 
             if (patrolPath.lookInMovingDirection)
-            {
-                Aim(patrolPath.patrolPoints[pathIndex]);
-            }
+                Aim(patrolPath.patrolPoints[pathIndex]);     
 
             rigidBody.position = Vector2.MoveTowards
                 (transform.position, new Vector2(targetPosition.x, targetPosition.y), movementThisFrame);
 
+            if (Vector2.Distance(patrolPath.patrolPoints[targetIndex], transform.position) < 0.1f)
+            {
+                reversePath = patrolPath.loopPatrol ? !reversePath : reversePath;
+                return;
+            }
+
             if (Vector2.Distance(transform.position, targetPosition) < 0.1f)
-                pathIndex++;
+            {
+                pathIndex += indexOffset;
+            }
+        }*/
+
+    IEnumerator MoveAndWait()
+    {
+        patrolRoutineIsRunning = true;
+
+        int targetIndex = reversePath ? 0 : patrolPath.patrolPoints.Count - 1;
+        int indexOffset = reversePath ? -1 : 1;
+        var targetPosition = patrolPath.patrolPoints[pathIndex];
+
+        FollowPath(targetPosition);
+
+        if (Vector2.Distance(patrolPath.patrolPoints[targetIndex], transform.position) < 0.1f)
+        {
+            reversePath = patrolPath.loopPatrol ? !reversePath : reversePath;
+            patrolRoutineIsRunning = false;
+            yield break;   
         }
+
+        if (Vector2.Distance(transform.position, targetPosition) < 0.1f)
+        {
+            pathIndex += indexOffset;
+            yield return new WaitForSeconds(1);
+        }
+
+        patrolRoutineIsRunning = false;
+    }
+
+    void FollowPath(Vector3 targetPosition)
+    {
+        var movementThisFrame = movementSpeed * Time.fixedDeltaTime;
+
+        if (patrolPath.lookInMovingDirection)
+            Aim(patrolPath.patrolPoints[pathIndex]);
+
+        rigidBody.position = Vector2.MoveTowards
+            (transform.position, new Vector2(targetPosition.x, targetPosition.y), movementThisFrame);
     }
 
     public float GetFovAngle()
