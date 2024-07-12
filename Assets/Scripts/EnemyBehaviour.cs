@@ -18,7 +18,7 @@ public class EnemyBehaviour : MonoBehaviour
     int pathIndex = 0;
     Coroutine patrolCR;
     
-    List<Vector3Int> pathToPlayer;
+    List<Vector3Int> pathToPlayer = new List<Vector3Int>();
     
 
     GameObject player;
@@ -93,7 +93,7 @@ public class EnemyBehaviour : MonoBehaviour
         ContactFilter2D contactFilter = new ContactFilter2D();
         contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
 
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Tilemap", "Physical Objects", "Player"));
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Tilemap", "Physical Objects", "Doors", "Player"));
         Debug.DrawLine(rigidBody.position, currentTarget, Color.red);
 
         if (hit.collider != null)
