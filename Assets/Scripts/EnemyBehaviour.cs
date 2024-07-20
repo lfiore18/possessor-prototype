@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyBehaviour : MonoBehaviour
+public class EnemyBehaviour : MonoBehaviour, IFieldOfView
 {
     [SerializeField] float movementSpeed = 2f;
 
@@ -20,7 +20,6 @@ public class EnemyBehaviour : MonoBehaviour
     
     List<Vector3Int> pathToPlayer = new List<Vector3Int>();
     
-
     GameObject player;
     Rigidbody2D rigidBody;
 

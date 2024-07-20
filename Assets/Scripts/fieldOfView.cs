@@ -1,11 +1,19 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+public interface IFieldOfView
+{
+    float GetFovAngle();
+    float GetVisionRange();
+}
+
+[RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 public class fieldOfView : MonoBehaviour
 {
     [SerializeField] [Range(1, 20)] int meshResolution = 3;
     [SerializeField] public Color meshAlertColor;
-    EnemyBehaviour parent;
+    IFieldOfView parent;
 
     // parameters determined by parent properties
     float angleFov; 
@@ -18,8 +26,6 @@ public class fieldOfView : MonoBehaviour
     int[] triangles;
     Vector2 rayCastOrigin;
 
-    Crosshair crosshair;
-
     void Start()
     {
         mesh = new Mesh();
@@ -27,15 +33,16 @@ public class fieldOfView : MonoBehaviour
         Debug.Log(rend.sortingLayerName);
 
         GetComponent<MeshFilter>().mesh = mesh;
-        crosshair = FindObjectOfType<Crosshair>();
 
-        parent = gameObject.GetComponentInParent<EnemyBehaviour>();
+        parent = gameObject.GetComponentInParent<IFieldOfView>();
 
         if (parent != null)
         {
             angleFov = parent.GetFovAngle();
             viewDistance = parent.GetVisionRange();
         }
+
+        Debug.Log(parent + " fieldOfView: " + angleFov);
 
         CreateShape();
         UpdateMesh();
@@ -71,8 +78,8 @@ public class fieldOfView : MonoBehaviour
         // The smoothness of the arc will be determined by the number of steps in between vertices 2 and 3
         // For each step, a ray will be fired at "viewRange" distance away from the 1st vertex, at an angle
 
-        rayCastOrigin = Vector2.zero;      
-        angleStart = 90 - (angleFov / 2);
+        rayCastOrigin = Vector2.zero;
+        angleStart = 90 + transform.eulerAngles.z - (angleFov / 2);
 
         vertices = new Vector3[3 + (meshResolution - 1)]; // we start with 3, the minimum number of vertices
 
@@ -81,17 +88,32 @@ public class fieldOfView : MonoBehaviour
 
         vertices[0] = rayCastOrigin;
 
+        Vector2 adjustedAngle;
+        Vector2 vertex;
         RaycastHit2D hit;
         for (int i = 1; i < vertices.Length - 1; i++)
         {
-            hit = Physics2D.Raycast(transform.parent.position, AngleToVector(angleCurr), viewDistance, LayerMask.GetMask("Tilemap, Physical Objects", "Player"));
-            Vector2 vertex = (Vector2)AngleToVector(angleCurr) * (hit.collider != null ? hit.distance : viewDistance);
-            vertices[i] = vertex;
+            adjustedAngle = AngleToVector(angleCurr);
 
+            hit = Physics2D.Raycast(transform.position, adjustedAngle, viewDistance, LayerMask.GetMask("Tilemap", "Physical Objects", "Player"));
+            
+            Debug.DrawRay(transform.position, adjustedAngle * (hit.collider != null ? hit.distance : viewDistance));
+            vertex = adjustedAngle * (hit.collider != null ? hit.distance : viewDistance);
+            vertices[i] = transform.InverseTransformPoint((Vector3)vertex + transform.position);
+            vertices[i].z = 0;
             angleCurr += angleStep;
         }
-        hit = Physics2D.Raycast(transform.parent.position, AngleToVector(angleCurr), viewDistance, LayerMask.GetMask("Tilemap, Physical Objects", "Player"));
-        vertices[vertices.Length - 1] = AngleToVector(angleStart + angleFov) * (hit.collider != null ? hit.distance : viewDistance);
+
+        // Add the final vertex
+        adjustedAngle = AngleToVector(90 + transform.eulerAngles.z + (angleFov / 2));
+
+        hit = Physics2D.Raycast(transform.position, adjustedAngle, viewDistance, LayerMask.GetMask("Tilemap", "Physical Objects", "Player"));
+        
+        Debug.DrawRay(transform.position, adjustedAngle * (hit.collider != null ? hit.distance : viewDistance));
+        vertex = adjustedAngle * (hit.collider != null ? hit.distance : viewDistance);
+
+        vertices[vertices.Length - 1] = transform.InverseTransformPoint((Vector3)vertex + transform.position);
+        vertices[vertices.Length - 1].z = 0;
 
         int numOfTris = meshResolution * 3;
 
@@ -113,6 +135,8 @@ public class fieldOfView : MonoBehaviour
 
         mesh.vertices = vertices;
         mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
     }
 
     public void SetColour(Color color)
@@ -129,29 +153,27 @@ public class fieldOfView : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        int rayCount = meshResolution - 1;
-
         float angleStep = angleFov / meshResolution;
         float angleCurr = 0;
 
-        //Debug.Log("ray count = " +  rayCount);
+        Vector2 adjustedAngle;
+
         RaycastHit2D hit;
+
+        float adjustedAngleCalc = transform.eulerAngles.z + 90f;
+
         for (; angleCurr < angleFov;)
         {
-            hit = Physics2D.Raycast(transform.parent.position, AngleToVector(angleCurr), viewDistance, LayerMask.GetMask("Physical Objects"));
-            if (hit.collider != null)
-            {
-                Gizmos.DrawRay(transform.position, AngleToVector(angleCurr) * hit.distance);
-            } else
-            {
-                Gizmos.DrawRay(transform.position, AngleToVector(angleCurr) * viewDistance);
-            }
+            adjustedAngle = AngleToVector(adjustedAngleCalc - (angleFov / 2) + angleCurr);
+            hit = Physics2D.Raycast(transform.parent.position, adjustedAngle, viewDistance, LayerMask.GetMask("Doors", "Tilemap", "Physical Objects"));
+            Gizmos.DrawRay(transform.position, adjustedAngle * (hit.collider != null ? hit.distance : viewDistance));
 
             angleCurr += angleStep;
         }
 
-        hit = Physics2D.Raycast(transform.parent.position, AngleToVector(angleFov), viewDistance, LayerMask.GetMask("Physical Objects"));
-        Gizmos.DrawRay(transform.position, AngleToVector(angleFov) * (hit.collider != null ? hit.distance : viewDistance ));
+        adjustedAngle = AngleToVector(adjustedAngleCalc + (angleFov / 2));
+        hit = Physics2D.Raycast(transform.parent.position, adjustedAngle, viewDistance, LayerMask.GetMask("Doors", "Tilemap", "Physical Objects"));
+        Gizmos.DrawRay(transform.position, adjustedAngle * (hit.collider != null ? hit.distance : viewDistance));
     }
 
 
