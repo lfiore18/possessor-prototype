@@ -50,8 +50,6 @@ public class SurveillanceCamera : MonoBehaviour, IFieldOfView
         {
             Turn();
         }
-
-        Debug.Log(alerted);
     }
 
     void Turn()
@@ -64,12 +62,10 @@ public class SurveillanceCamera : MonoBehaviour, IFieldOfView
         rb2D.rotation += movementSpeed * Time.deltaTime;
 
         degreesLeftToTurn = degreesLeftToTurn <= 0 ? rotateDegreesFromStart : degreesLeftToTurn;
-        Debug.Log("Degrees Left: " + degreesLeftToTurn);
     }
 
     private void Aim(Vector2 target)
     {
-        Debug.Log("running");
         // Find the direction to look in by subtracting the current position of this game object from the target position in world co-ordinates
         Vector2 lookDirection = target - rb2D.position;
 
@@ -103,7 +99,6 @@ public class SurveillanceCamera : MonoBehaviour, IFieldOfView
         {
             if (hit.collider != null && hit.collider.name == "Player")
             {
-                Debug.Log("Sighted!");
                 alerted = true;
                 GetComponentInChildren<fieldOfView>().SetColour(Color.red);
             }

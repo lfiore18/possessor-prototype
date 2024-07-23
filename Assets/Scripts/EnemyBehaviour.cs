@@ -21,6 +21,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
     List<Vector3Int> pathToPlayer = new List<Vector3Int>();
     
     GameObject player;
+    AlertSystem alertSystem;
     Rigidbody2D rigidBody;
 
     Vector2 lookDirection;
@@ -39,6 +40,9 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
     {
         player = GameObject.Find("Player");
         rigidBody = GetComponent<Rigidbody2D>();
+
+        alertSystem = FindObjectOfType<AlertSystem>();
+        alertSystem.AddListener(OnPlayerSpotted);
     }
 
     // Update is called once per frame
@@ -49,6 +53,8 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
 
         if (alerted)
         {
+            //Debug.Break();
+
             // Stop the patrol coroutine
             if (patrolRoutineIsRunning)
             {
@@ -57,8 +63,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
             }
             
             Aim(currentTarget);
-            //Move();
-            
+
             if (pathfinding.PlayerPositionHasChanged())
                 pathToPlayer = pathfinding.CalculatePath(this.transform.position);
 
@@ -106,8 +111,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
         {
             if (hit.collider != null && hit.collider.name == "Player")
             {
-                //Debug.Log("Sighted!");
-                alerted = true;
+                OnPlayerSpotted();
                 GetComponentInChildren<fieldOfView>().SetColour(Color.red);
             } 
         }
@@ -143,6 +147,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
 
         if (pathToPlayer == null)
             pathToPlayer = pathfinding.CalculatePath(this.transform.position);
+
 
         if (pathToPlayer.Count >= 1)
         {
@@ -228,6 +233,19 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
 
         rigidBody.position = Vector2.MoveTowards
             (transform.position, new Vector2(targetPosition.x, targetPosition.y), movementThisFrame);
+    }
+
+    public void OnPlayerSpotted()
+    {
+        alerted = true;
+
+        if (pathToPlayer.Count < 1)
+            pathToPlayer = pathfinding.CalculatePath(this.transform.position);
+
+        if (!alertSystem.GetStatus())   
+            alertSystem.SetAlert();
+
+        Debug.Log(gameObject.name + " alerted");
     }
 
     public float GetFovAngle()

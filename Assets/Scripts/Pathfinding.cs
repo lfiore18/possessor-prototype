@@ -248,11 +248,6 @@ public class Pathfinding : MonoBehaviour
 
         bool positionHasChanged = startPos != playerCurrentPos;        
 
-        if (positionHasChanged)
-        {
-            Debug.Log("Player position has Changed");
-        }
-
         return positionHasChanged;   
     }
 
