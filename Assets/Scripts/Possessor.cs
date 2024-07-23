@@ -1,26 +1,31 @@
-﻿using System.Collections;
+﻿using Cinemachine;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 
 public class Possessor : MonoBehaviour
 {
     [SerializeField] Movement playerBody;
     [SerializeField] Movement currentlyPossessed;
+    [SerializeField] CinemachineVirtualCamera followCamera;
 
-    Crosshair crosshair;
+    Crosshair crosshair;    
+
 
     private void Start()
     {
         currentlyPossessed = playerBody;
         crosshair = GetComponent<Crosshair>();
         crosshair.SetPlayerBody(currentlyPossessed);
+        followCamera.Follow = playerBody.transform;
     }
 
     private void Update()
     {
         if (Input.GetKey(KeyCode.E) && currentlyPossessed != playerBody)
         {
-            PassControlToEntity(playerBody);
+            PassControlToEntity(playerBody);            
         }
     }
 
@@ -41,7 +46,6 @@ public class Possessor : MonoBehaviour
 
     private void PassControlToEntity(Movement entity)
     {
-
         // If the entity has default enemy behaviour, turn it off before possessing entity
         if (entity.GetComponent<EnemyBehaviour>() != null)
         {
@@ -59,5 +63,6 @@ public class Possessor : MonoBehaviour
         currentlyPossessed.enabled = true;
 
         crosshair.SetPlayerBody(entity);
+        followCamera.Follow = entity.transform;
     }
 }
