@@ -30,7 +30,6 @@ public class fieldOfView : MonoBehaviour
     {
         mesh = new Mesh();
         rend = GetComponent<MeshRenderer>();
-        Debug.Log(rend.sortingLayerName);
 
         GetComponent<MeshFilter>().mesh = mesh;
 
@@ -41,8 +40,6 @@ public class fieldOfView : MonoBehaviour
             angleFov = parent.GetFovAngle();
             viewDistance = parent.GetVisionRange();
         }
-
-        Debug.Log(parent + " fieldOfView: " + angleFov);
 
         CreateShape();
         UpdateMesh();

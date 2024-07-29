@@ -18,6 +18,9 @@ public class Possessor : MonoBehaviour
         currentlyPossessed = playerBody;
         crosshair = GetComponent<Crosshair>();
         crosshair.SetPlayerBody(currentlyPossessed);
+
+        if (followCamera == null)
+            Debug.LogError("followCamera is not set in inspector. Please set to an instance of CinemachineVirtualCamera.");
         followCamera.Follow = playerBody.transform;
     }
 

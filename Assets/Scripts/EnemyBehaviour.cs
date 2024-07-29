@@ -43,6 +43,12 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
 
         alertSystem = FindObjectOfType<AlertSystem>();
         alertSystem.AddListener(OnPlayerSpotted);
+
+        if (pathfinding == null)
+            pathfinding = FindObjectOfType<Pathfinding>();
+
+        if (patrolPath == null)
+            patrolPath = GetComponent<PatrolPath>(); 
     }
 
     // Update is called once per frame
@@ -76,7 +82,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
         } 
         else
         {
-            if (!patrolRoutineIsRunning)
+            if (!patrolRoutineIsRunning && patrolPath != null)
             {
                 patrolCR = StartCoroutine(MoveAndWait());
             }
@@ -256,6 +262,14 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
     public float GetVisionRange()
     {
         return visionRange;
+    }
+
+    public void Kill(Vector2 hitPoint)
+    {
+        GetComponent<Death>().Kill(hitPoint);
+        Destroy(GetComponent<Movement>());
+        Destroy(gameObject.GetComponentInChildren<fieldOfView>().gameObject);
+        Destroy(this);
     }
 
     private void OnDrawGizmos()

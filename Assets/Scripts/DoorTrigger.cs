@@ -5,7 +5,9 @@ using UnityEngine;
 public class DoorTrigger : MonoBehaviour
 {
     [SerializeField] Rigidbody2D doorRigidBody;
-    Vector2 originalPosition;
+    [SerializeField] Transform doorPosition;
+    Vector3 closedPosition;
+    Vector3 openPosition;
 
     [SerializeField] [Tooltip("Used to determine who can enter this area")] int accessLevel = 0;
     [SerializeField] [Tooltip("Dictate whether the door will open left or right")] bool opensToRight = false;
@@ -15,7 +17,13 @@ public class DoorTrigger : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        originalPosition = doorRigidBody.position;
+        closedPosition = doorPosition.localPosition;
+
+        if (opensToRight)
+            openPosition = new Vector3(doorPosition.localPosition.x + 2, doorPosition.localPosition.y, doorPosition.localPosition.z);
+        else
+            openPosition = new Vector3(doorPosition.localPosition.x - 2, doorPosition.localPosition.y, doorPosition.localPosition.z);
+
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -60,18 +68,11 @@ public class DoorTrigger : MonoBehaviour
 
     void OpenDoor()
     {
-        Vector2 openPosition;
-
-        if (opensToRight)
-            openPosition = new Vector2(doorRigidBody.position.x + 2, doorRigidBody.position.y);
-        else
-            openPosition = new Vector2(doorRigidBody.position.x - 2, doorRigidBody.position.y);
-
-        doorRigidBody.position = openPosition;        
+        doorPosition.localPosition = openPosition;        
     }
 
     void CloseDoor()
     {
-        doorRigidBody.position = originalPosition;
+        doorPosition.localPosition = closedPosition;
     }
 }
