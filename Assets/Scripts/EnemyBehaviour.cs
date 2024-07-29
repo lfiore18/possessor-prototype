@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
 {
     [SerializeField] float movementSpeed = 2f;
@@ -13,6 +14,9 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
     [SerializeField] Pathfinding pathfinding;
     [SerializeField] PatrolPath patrolPath;
     ICombatBehaviour combatBehaviour;
+
+    OnTargetSpotted onPlayerSpotted;
+
 
     bool reversePath = false;
     bool patrolRoutineIsRunning = false;
@@ -35,6 +39,8 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
 
     bool alerted = false;
 
+    float alertTimer = 5;
+
 
     // Start is called before the first frame update
     void Start()
@@ -42,14 +48,17 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         player = GameObject.Find("Player");
         rigidBody = GetComponent<Rigidbody2D>();
 
+        // Start listening to alert system events
         alertSystem = FindObjectOfType<AlertSystem>();
-        alertSystem.AddListener(OnPlayerSpotted);
+        alertSystem.onAlarmStarted.AddListener(AlarmStartedHandler);
+        alertSystem.onAlarmExpired.AddListener(AlarmExpiredHandler);
 
         if (pathfinding == null)
             pathfinding = FindObjectOfType<Pathfinding>();
 
         if (patrolPath == null)
             patrolPath = GetComponent<PatrolPath>();
+
         if (combatBehaviour == null)
             combatBehaviour = GetComponent<ICombatBehaviour>();
     }
@@ -70,28 +79,42 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
                 StopCoroutine(patrolCR);
                 patrolRoutineIsRunning = false;
             }
-            
-            Aim(currentTarget);
 
-            float distanceFromPlayer = Vector2.Distance(currentTarget, transform.position);
-
-            if (distanceFromPlayer <= visionRange)
+            if (IsTargetInLOS(currentTarget))
             {
                 Aim(currentTarget);
                 combatBehaviour.PerformCombatAction();
+
+                Debug.Log(alertTimer);
             } else
             {
+                // Runs when the target has broken line of sight with the enemy
+                
+                // Stop attacking because target is no longer in sight
                 combatBehaviour.StopCombatAction();
-            }
 
-            if (pathfinding.PlayerPositionHasChanged())
-                pathToPlayer = pathfinding.CalculatePath(this.transform.position);
+                // TODO: implement a "last known position" mechanic
+                // the enemy can continue to track the target for a set period of time (say 5 seconds)
+                // and will explore the last recorded position in pathfinding algorithm
+                if (pathfinding.PlayerPositionHasChanged())
+                    pathToPlayer = pathfinding.CalculatePath(this.transform.position);
+
+                // If the target has broken line of sight with the enemy, start the alarm timer
+                if (!alertSystem.GetAlarmStatus())
+                    alertSystem.StartAlarmTimer();
+
+                // If the enemy reaches the path without having reached the player, enemy is no longer alerted
+                // this accounts for if the player has reached an area that is currently inaccessible
+                if (pathToPlayer.Count > 0)
+                    FollowPlayer();
+
+                Debug.Log(alertTimer);
+            }
 
             // If the enemy reaches the path without having reached the player, enemy is no longer alerted
             // this accounts for if the player has reached an area that is currently inaccessible
-            if (pathToPlayer.Count > 0)
-                FollowPlayer();
-            else
+        
+            if (alertTimer <= 0)
                 alerted = false;
         } 
         else
@@ -107,33 +130,11 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
     {
         // If the distance between the player and the enemy is less than the vision range of the enemy
         // And angle between the direction the enemy is looking and the player is less than vision cone angle
-        // Enemy alerted!
-        
-        distanceFromPlayer = Vector2.Distance(target, transform.position);
-        lookDirection = target - rigidBody.position;
-
-        float angleFromPlayer = Vector2.Angle(transform.up, lookDirection);
-
-        ContactFilter2D contactFilter = new ContactFilter2D();
-        contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
-
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Tilemap", "Physical Objects", "Doors", "Player"));
-        Debug.DrawLine(rigidBody.position, currentTarget, Color.red);
-
-        if (hit.collider != null)
+        // Enemy alerted!        
+        if (IsTargetInLOS(target))
         {
-            //Debug.Log("Raycast Hit " + hit.collider.name);
-        }
-
-        // fovAngle divided in two since the enemy is the angle spread across his left/right sides
-        // TODO: Change this so that it checks to see if the player's collider is within fovAngle
-        if (distanceFromPlayer <= visionRange && angleFromPlayer <= (fovAngle / 2))
-        {
-            if (hit.collider != null && hit.collider.name == "Player")
-            {
-                OnPlayerSpotted();
-                GetComponentInChildren<fieldOfView>().SetColour(Color.red);
-            } 
+            AlarmStartedHandler();
+            GetComponentInChildren<fieldOfView>().SetColour(Color.red);
         }
         else
         {
@@ -141,7 +142,9 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         }
     }
 
-    bool PlayerInLineOfSight(Vector2 target)
+    // Returns true if the distance between the entity and the target is less than the vision range of the entity
+    // and angle between the direction the entity is looking and the target is less than the entity's field of view
+    bool IsTargetInLOS(Vector2 target)
     {
         distanceFromPlayer = Vector2.Distance(target, transform.position);
         lookDirection = target - rigidBody.position;
@@ -198,6 +201,8 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
             var movementThisFrame = movementSpeed * Time.fixedDeltaTime;
 
             Vector2 pos = new Vector2(targetPosition.x + 0.5f, targetPosition.y + 0.5f);
+
+            Aim(pos);
 
             // If a door has shut in the way of the path, remove the rest of the path
             // TODO: This almost certainly will need to be updated to become more robust
@@ -278,18 +283,24 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
             (transform.position, new Vector2(targetPosition.x, targetPosition.y), movementThisFrame);
     }
 
-    public void OnPlayerSpotted()
+    public void AlarmStartedHandler()
     {
         alerted = true;
 
         if (pathToPlayer.Count < 1)
             pathToPlayer = pathfinding.CalculatePath(this.transform.position);
 
-        if (!alertSystem.GetStatus())   
-            alertSystem.SetAlert();
+        if (!alertSystem.GetAlarmStatus())   
+            alertSystem.RaiseAlarm();
 
         //Debug.Log(gameObject.name + " alerted");
     }
+
+    public void AlarmExpiredHandler()
+    {
+        alerted = false;
+    }
+
 
     public float GetFovAngle()
     {

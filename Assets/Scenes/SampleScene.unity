@@ -4876,10 +4876,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c46d5f4d6a51694fb47d152ae52e7fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerSpottedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  enemiesAlerted: 0
+  alarmLastsFor: 20
+  alarmTimer: 0
+  isAlarmed: 0
 --- !u!4 &1268925657
 Transform:
   m_ObjectHideFlags: 0
@@ -9953,6 +9952,11 @@ PrefabInstance:
       propertyPath: pathfinding
       value: 
       objectReference: {fileID: 932284478}
+    - target: {fileID: 2745559703958188773, guid: 159893b7481224f45825685a0bb693e8,
+        type: 3}
+      propertyPath: visionRange
+      value: 13.6
+      objectReference: {fileID: 0}
     - target: {fileID: 3029099913239498929, guid: 159893b7481224f45825685a0bb693e8,
         type: 3}
       propertyPath: m_Name

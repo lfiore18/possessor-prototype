@@ -1,42 +1,76 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
-
-
-public class PlayerSpottedEvent : UnityEvent { }
 
 public class AlertSystem : MonoBehaviour
 {
     public static Transform PlayerTransform;
-    public UnityEvent playerSpottedEvent;
-    public bool enemiesAlerted = false;
+
+    public OnAlarmStarted onAlarmStarted;
+    public OnAlarmExpired onAlarmExpired;
+
+    [SerializeField] float alarmLastsFor = 20f;
+    [SerializeField] float alarmTimer;
+    public bool isAlarmed = false;
+    bool hasTimerStarted = false;
 
     // Start is called before the first frame update
     void Start()
     {
-        if (playerSpottedEvent == null) playerSpottedEvent = new UnityEvent();
+        if (onAlarmStarted == null) onAlarmStarted = new OnAlarmStarted();
+        if (onAlarmExpired == null) onAlarmExpired = new OnAlarmExpired();
         if (PlayerTransform == null) PlayerTransform = GameObject.Find("Player").transform;
 
-        Debug.Log(PlayerTransform);
+        ResetAlarmTimer();
     }
 
-    public void SetAlert()
+    private void Update()
     {
-        if (!enemiesAlerted)
-            enemiesAlerted = true;
-
-        playerSpottedEvent.Invoke();
+        if (hasTimerStarted && alarmTimer > 0)
+            alarmTimer -= Time.deltaTime;
+        else if (isAlarmed)
+        {
+            isAlarmed = false;
+            ResetAlarmTimer();
+            StopAlarm();
+            onAlarmExpired.Invoke();
+        }
     }
 
-    public void AddListener(UnityAction action)
+    public void RaiseAlarm()
     {
-        Debug.Log(action.Target + " added to playerSpottedEvent");
-        playerSpottedEvent.AddListener(action);
+        if (!isAlarmed)
+            isAlarmed = true;
+        if (!hasTimerStarted)
+            StartAlarmTimer();
+
+        onAlarmStarted.Invoke();
     }
 
-    public bool GetStatus()
+    public void StartAlarmTimer()
     {
-        return enemiesAlerted;
+        hasTimerStarted = true;
+    }
+
+    public void StopAlarm()
+    {
+        isAlarmed = false;
+        hasTimerStarted = false;
+        alarmTimer = alarmLastsFor;
+    }
+
+    public void ResetAlarmTimer()
+    {
+        alarmTimer = alarmLastsFor;
+    }
+
+    public float AlarmTimeLeft()
+    {
+        return alarmTimer;
+    }
+
+    public bool GetAlarmStatus()
+    {
+        return isAlarmed;
     }
 }
