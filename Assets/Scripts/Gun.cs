@@ -6,6 +6,7 @@ public class Gun : MonoBehaviour
 {
     [SerializeField] GameObject bulletPrefab;
     [SerializeField] float projectileSpeed = 20f;
+    [SerializeField] float fireRate = 0.2f;
 
     Coroutine firingCoroutine;
 
@@ -31,7 +32,7 @@ public class Gun : MonoBehaviour
                 as GameObject;
             bulletInstance.transform.rotation = transform.rotation;
             bulletInstance.GetComponent<Rigidbody2D>().velocity = transform.up * projectileSpeed;
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSeconds(fireRate);
         }
     }
 }

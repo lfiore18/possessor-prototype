@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyBehaviour : MonoBehaviour, IFieldOfView
+public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
 {
     [SerializeField] float movementSpeed = 2f;
 
@@ -12,6 +12,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
 
     [SerializeField] Pathfinding pathfinding;
     [SerializeField] PatrolPath patrolPath;
+    ICombatBehaviour combatBehaviour;
 
     bool reversePath = false;
     bool patrolRoutineIsRunning = false;
@@ -48,7 +49,9 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
             pathfinding = FindObjectOfType<Pathfinding>();
 
         if (patrolPath == null)
-            patrolPath = GetComponent<PatrolPath>(); 
+            patrolPath = GetComponent<PatrolPath>();
+        if (combatBehaviour == null)
+            combatBehaviour = GetComponent<ICombatBehaviour>();
     }
 
     // Update is called once per frame
@@ -70,11 +73,22 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
             
             Aim(currentTarget);
 
+            float distanceFromPlayer = Vector2.Distance(currentTarget, transform.position);
+
+            if (distanceFromPlayer <= visionRange)
+            {
+                Aim(currentTarget);
+                combatBehaviour.PerformCombatAction();
+            } else
+            {
+                combatBehaviour.StopCombatAction();
+            }
+
             if (pathfinding.PlayerPositionHasChanged())
                 pathToPlayer = pathfinding.CalculatePath(this.transform.position);
 
             // If the enemy reaches the path without having reached the player, enemy is no longer alerted
-            // this accounts for if the player has reached an area that is currently in accessible
+            // this accounts for if the player has reached an area that is currently inaccessible
             if (pathToPlayer.Count > 0)
                 FollowPlayer();
             else
@@ -125,6 +139,29 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
         {
             GetComponentInChildren<fieldOfView>().SetColour(Color.grey);
         }
+    }
+
+    bool PlayerInLineOfSight(Vector2 target)
+    {
+        distanceFromPlayer = Vector2.Distance(target, transform.position);
+        lookDirection = target - rigidBody.position;
+
+        float angleFromPlayer = Vector2.Angle(transform.up, lookDirection);
+
+        ContactFilter2D contactFilter = new ContactFilter2D();
+        contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
+
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Tilemap", "Physical Objects", "Doors", "Player"));
+        Debug.DrawLine(rigidBody.position, currentTarget, Color.red);
+
+        // fovAngle divided in two since the enemy is the angle spread across his left/right sides
+        // TODO: Change this so that it checks to see if the player's collider is within fovAngle
+        if (distanceFromPlayer <= visionRange && angleFromPlayer <= (fovAngle / 2))
+        {
+            return hit.collider != null && hit.collider.name == "Player";
+        }
+
+        return false;
     }
 
     private void Aim(Vector2 target)
@@ -251,7 +288,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfView
         if (!alertSystem.GetStatus())   
             alertSystem.SetAlert();
 
-        Debug.Log(gameObject.name + " alerted");
+        //Debug.Log(gameObject.name + " alerted");
     }
 
     public float GetFovAngle()

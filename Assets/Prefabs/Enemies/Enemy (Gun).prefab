@@ -1,5 +1,18 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-837100710444711204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3029099913239498929}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ceaf549783649542a14ef67e3ce7678, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gun: {fileID: 0}
 --- !u!114 &1065062662
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20,21 +33,6 @@ MonoBehaviour:
   loopPatrol: 1
   pathColor: {r: 0.013883919, g: 0.23092937, b: 0.9811321, a: 0.9019608}
   sphereRadius: 0.5
---- !u!114 &1065062669
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3029099913239498929}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3729409db5b74b44ac59d2d3fe53e03, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  decelerationRate: 2
-  bloodDecalPrefab: {fileID: 8958427039896533690, guid: 982520bd98184344d8c1dfcf80550661,
-    type: 3}
 --- !u!1001 &1056506452237030252
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -105,7 +103,7 @@ PrefabInstance:
     - target: {fileID: 2639374738437276637, guid: 338fabdc89e5b404cab406ad27288654,
         type: 3}
       propertyPath: m_Name
-      value: Enemy (2)
+      value: Enemy (Gun)
       objectReference: {fileID: 0}
     - target: {fileID: 2639374738437276637, guid: 338fabdc89e5b404cab406ad27288654,
         type: 3}
@@ -122,7 +120,8 @@ PrefabInstance:
       propertyPath: pathfinding
       value: 
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1648572556, guid: 338fabdc89e5b404cab406ad27288654, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 338fabdc89e5b404cab406ad27288654, type: 3}
 --- !u!1 &3029099913239498929 stripped
 GameObject:

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SurveillanceCamera : MonoBehaviour, IFieldOfView
+public class SurveillanceCamera : MonoBehaviour, IFieldOfViewUser
 {
     // vision parameters
     [Header("Vision Parameters")]

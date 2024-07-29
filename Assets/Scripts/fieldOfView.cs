@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public interface IFieldOfView
+public interface IFieldOfViewUser
 {
     float GetFovAngle();
     float GetVisionRange();
@@ -13,7 +13,7 @@ public class fieldOfView : MonoBehaviour
 {
     [SerializeField] [Range(1, 20)] int meshResolution = 3;
     [SerializeField] public Color meshAlertColor;
-    IFieldOfView parent;
+    IFieldOfViewUser parent;
 
     // parameters determined by parent properties
     float angleFov; 
@@ -33,7 +33,7 @@ public class fieldOfView : MonoBehaviour
 
         GetComponent<MeshFilter>().mesh = mesh;
 
-        parent = gameObject.GetComponentInParent<IFieldOfView>();
+        parent = gameObject.GetComponentInParent<IFieldOfViewUser>();
 
         if (parent != null)
         {
