@@ -15,9 +15,6 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
     [SerializeField] PatrolPath patrolPath;
     ICombatBehaviour combatBehaviour;
 
-    OnTargetSpotted onPlayerSpotted;
-
-
     bool reversePath = false;
     bool patrolRoutineIsRunning = false;
     int pathIndex = 0;
@@ -51,7 +48,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         // Start listening to alert system events
         alertSystem = FindObjectOfType<AlertSystem>();
         alertSystem.onAlarmStarted.AddListener(AlarmStartedHandler);
-        alertSystem.onAlarmExpired.AddListener(AlarmExpiredHandler);
+        alertSystem.onAlarmTimerExpired.AddListener(AlarmExpiredHandler);
 
         if (pathfinding == null)
             pathfinding = FindObjectOfType<Pathfinding>();
@@ -112,8 +109,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
             }
 
             // If the enemy reaches the path without having reached the player, enemy is no longer alerted
-            // this accounts for if the player has reached an area that is currently inaccessible
-        
+            // this accounts for if the player has reached an area that is currently inaccessible        
             if (alertTimer <= 0)
                 alerted = false;
         } 

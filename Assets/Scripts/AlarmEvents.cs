@@ -5,5 +5,6 @@ using UnityEngine.Events;
 
 
 public class OnAlarmStarted : UnityEvent { }
-public class OnAlarmExpired : UnityEvent { }
+public class OnAlarmTimerExpired : UnityEvent { }
 public class OnTargetSpotted : UnityEvent { }
+public class OnTargetLost : UnityEvent { }

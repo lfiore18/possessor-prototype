@@ -7,18 +7,20 @@ public class AlertSystem : MonoBehaviour
     public static Transform PlayerTransform;
 
     public OnAlarmStarted onAlarmStarted;
-    public OnAlarmExpired onAlarmExpired;
+    public OnAlarmTimerExpired onAlarmTimerExpired;
 
     [SerializeField] float alarmLastsFor = 20f;
     [SerializeField] float alarmTimer;
     public bool isAlarmed = false;
     bool hasTimerStarted = false;
 
+    [SerializeField] TimerUI timerText;
+
     // Start is called before the first frame update
     void Start()
     {
         if (onAlarmStarted == null) onAlarmStarted = new OnAlarmStarted();
-        if (onAlarmExpired == null) onAlarmExpired = new OnAlarmExpired();
+        if (onAlarmTimerExpired == null) onAlarmTimerExpired = new OnAlarmTimerExpired();
         if (PlayerTransform == null) PlayerTransform = GameObject.Find("Player").transform;
 
         ResetAlarmTimer();
@@ -27,13 +29,14 @@ public class AlertSystem : MonoBehaviour
     private void Update()
     {
         if (hasTimerStarted && alarmTimer > 0)
+        {
             alarmTimer -= Time.deltaTime;
+            SetAlarmText(alarmTimer);
+        }
         else if (isAlarmed)
         {
-            isAlarmed = false;
-            ResetAlarmTimer();
             StopAlarm();
-            onAlarmExpired.Invoke();
+            onAlarmTimerExpired.Invoke();
         }
     }
 
@@ -41,8 +44,10 @@ public class AlertSystem : MonoBehaviour
     {
         if (!isAlarmed)
             isAlarmed = true;
-        if (!hasTimerStarted)
-            StartAlarmTimer();
+/*        if (!hasTimerStarted)
+            StartAlarmTimer();*/
+
+
 
         onAlarmStarted.Invoke();
     }
@@ -72,5 +77,10 @@ public class AlertSystem : MonoBehaviour
     public bool GetAlarmStatus()
     {
         return isAlarmed;
+    }
+
+    public void SetAlarmText(float timeLeft)
+    {
+        timerText.SetAlarmTimerText(timeLeft);
     }
 }
