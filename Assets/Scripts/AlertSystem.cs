@@ -4,34 +4,38 @@ using UnityEngine;
 
 public class AlertSystem : MonoBehaviour
 {
-    public static Transform PlayerTransform;
-
     public OnAlarmStarted onAlarmStarted;
     public OnAlarmTimerExpired onAlarmTimerExpired;
 
     [SerializeField] float alarmLastsFor = 20f;
     [SerializeField] float alarmTimer;
     public bool isAlarmed = false;
+
     bool hasTimerStarted = false;
 
-    [SerializeField] TimerUI timerText;
+    // Enemies will call in to update this
+    Vector2 targetlastKnownPos;
+
+    // keep track of which enemies can currently see player
+    [SerializeField] List<EnemyBehaviour> enemiesInSightOfTarget = new List<EnemyBehaviour>();
 
     // Start is called before the first frame update
     void Start()
     {
         if (onAlarmStarted == null) onAlarmStarted = new OnAlarmStarted();
         if (onAlarmTimerExpired == null) onAlarmTimerExpired = new OnAlarmTimerExpired();
-        if (PlayerTransform == null) PlayerTransform = GameObject.Find("Player").transform;
 
         ResetAlarmTimer();
     }
 
     private void Update()
     {
-        if (hasTimerStarted && alarmTimer > 0)
+        if (!IsTargetInSight() && isAlarmed)
+            StartAlarmTimer();
+
+        if (!IsTargetInSight() && hasTimerStarted && alarmTimer > 0)
         {
             alarmTimer -= Time.deltaTime;
-            SetAlarmText(alarmTimer);
         }
         else if (isAlarmed)
         {
@@ -42,13 +46,8 @@ public class AlertSystem : MonoBehaviour
 
     public void RaiseAlarm()
     {
-        if (!isAlarmed)
-            isAlarmed = true;
-/*        if (!hasTimerStarted)
-            StartAlarmTimer();*/
-
-
-
+        isAlarmed = true;
+        
         onAlarmStarted.Invoke();
     }
 
@@ -79,8 +78,32 @@ public class AlertSystem : MonoBehaviour
         return isAlarmed;
     }
 
-    public void SetAlarmText(float timeLeft)
+    public void UpdateLastKnownPosition(Vector2 newPosition)
     {
-        timerText.SetAlarmTimerText(timeLeft);
+        targetlastKnownPos = newPosition;
+    }
+
+    public Vector2 GetLastKnownPosition()
+    {
+        return targetlastKnownPos;
+    }
+
+    
+    bool IsTargetInSight()
+    {
+        // check to see if there is at least one enemy with a visual on target
+        return enemiesInSightOfTarget.Count > 0; 
+    }
+
+    public void AddSelfToNetwork(EnemyBehaviour enemy)
+    {
+        if (!enemiesInSightOfTarget.Contains(enemy))
+            enemiesInSightOfTarget.Add(enemy);
+    }
+
+    public void RemoveSelfFromNetwork(EnemyBehaviour enemy)
+    {
+        if (enemiesInSightOfTarget.Contains(enemy))
+            enemiesInSightOfTarget.Remove(enemy);
     }
 }

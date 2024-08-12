@@ -12,7 +12,6 @@ public class Possessor : MonoBehaviour
 
     Crosshair crosshair;    
 
-
     private void Start()
     {
         currentlyPossessed = playerBody;

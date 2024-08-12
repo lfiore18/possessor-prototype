@@ -15,7 +15,7 @@ public class SurveillanceCamera : MonoBehaviour, IFieldOfViewUser
     [SerializeField] float movementSpeed = 2f;
 
     GameObject player;
-    Vector2 currentTarget;
+    Vector2 currentTargetPos;
     Vector2 lookDirection;
 
     Rigidbody2D rb2D;
@@ -39,12 +39,12 @@ public class SurveillanceCamera : MonoBehaviour, IFieldOfViewUser
     // Update is called once per frame
     void Update()
     {
-        currentTarget = player.transform.position;
-        Search(currentTarget);
+        currentTargetPos = player.transform.position;
+        Search(currentTargetPos);
 
         if (alerted)
         {
-            Aim(currentTarget);
+            Aim(currentTargetPos);
         }
         else
         {

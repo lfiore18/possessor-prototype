@@ -16,7 +16,8 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
     ICombatBehaviour combatBehaviour;
 
     bool reversePath = false;
-    bool patrolRoutineIsRunning = false;
+    [SerializeField] bool patrolRoutineIsRunning = false;
+
     int pathIndex = 0;
     Coroutine patrolCR;
     
@@ -27,16 +28,16 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
     Rigidbody2D rigidBody;
 
     Vector2 lookDirection;
-    Vector2 currentTarget;
+    Vector2 currentTargetPos;
 
     const float RIGHT_ANGLE = 90f;
 
     float distanceFromPlayer;
     float angle;
-
-    bool alerted = false;
-
     float alertTimer = 5;
+
+    [SerializeField] bool hasTargetInSight = false;
+    [SerializeField] bool isAlerted = false;
 
 
     // Start is called before the first frame update
@@ -45,10 +46,9 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         player = GameObject.Find("Player");
         rigidBody = GetComponent<Rigidbody2D>();
 
-        // Start listening to alert system events
         alertSystem = FindObjectOfType<AlertSystem>();
-        alertSystem.onAlarmStarted.AddListener(AlarmStartedHandler);
-        alertSystem.onAlarmTimerExpired.AddListener(AlarmExpiredHandler);
+
+        AddEventListeners();
 
         if (pathfinding == null)
             pathfinding = FindObjectOfType<Pathfinding>();
@@ -63,13 +63,11 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
     // Update is called once per frame
     void Update()
     {
-        currentTarget = player.transform.position;
-        Search(currentTarget);
+        currentTargetPos = player.transform.position;
+        Search(currentTargetPos);
 
-        if (alerted)
+        if (isAlerted)
         {
-            //Debug.Break();
-
             // Stop the patrol coroutine
             if (patrolRoutineIsRunning)
             {
@@ -77,16 +75,18 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
                 patrolRoutineIsRunning = false;
             }
 
-            if (IsTargetInLOS(currentTarget))
+            if (IsTargetInLOS(currentTargetPos))
             {
-                Aim(currentTarget);
+                Aim(currentTargetPos);
                 combatBehaviour.PerformCombatAction();
 
-                Debug.Log(alertTimer);
-            } else
+                alertTimer = 5;
+                Debug.Log("Still has sight");
+            } 
+            else
             {
                 // Runs when the target has broken line of sight with the enemy
-                
+
                 // Stop attacking because target is no longer in sight
                 combatBehaviour.StopCombatAction();
 
@@ -105,13 +105,14 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
                 if (pathToPlayer.Count > 0)
                     FollowPlayer();
 
-                Debug.Log(alertTimer);
+                alertTimer -= Time.deltaTime;
+                Debug.Log("Lost sight for: " + alertTimer + " seconds");
             }
 
             // If the enemy reaches the path without having reached the player, enemy is no longer alerted
             // this accounts for if the player has reached an area that is currently inaccessible        
             if (alertTimer <= 0)
-                alerted = false;
+                isAlerted = false;
         } 
         else
         {
@@ -129,11 +130,13 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         // Enemy alerted!        
         if (IsTargetInLOS(target))
         {
+            TargetSighted();
             AlarmStartedHandler();
             GetComponentInChildren<fieldOfView>().SetColour(Color.red);
         }
         else
         {
+            TargetLost();
             GetComponentInChildren<fieldOfView>().SetColour(Color.grey);
         }
     }
@@ -151,7 +154,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
 
         RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Tilemap", "Physical Objects", "Doors", "Player"));
-        Debug.DrawLine(rigidBody.position, currentTarget, Color.red);
+        Debug.DrawLine(rigidBody.position, currentTargetPos, Color.red);
 
         // fovAngle divided in two since the enemy is the angle spread across his left/right sides
         // TODO: Change this so that it checks to see if the player's collider is within fovAngle
@@ -256,7 +259,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         {
             reversePath = patrolPath.loopPatrol ? !reversePath : reversePath;
             patrolRoutineIsRunning = false;
-            yield break;   
+            yield break;
         }
 
         if (Vector2.Distance(transform.position, targetPosition) < 0.1f)
@@ -281,20 +284,21 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
 
     public void AlarmStartedHandler()
     {
-        alerted = true;
+        isAlerted = true;
 
-        if (pathToPlayer.Count < 1)
-            pathToPlayer = pathfinding.CalculatePath(this.transform.position);
+        pathToPlayer = pathfinding.CalculatePath(this.transform.position);
 
         if (!alertSystem.GetAlarmStatus())   
             alertSystem.RaiseAlarm();
+
+        alertSystem.UpdateLastKnownPosition(currentTargetPos);
 
         //Debug.Log(gameObject.name + " alerted");
     }
 
     public void AlarmExpiredHandler()
     {
-        alerted = false;
+        isAlerted = false;
     }
 
 
@@ -311,9 +315,40 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
     public void Kill(Vector2 hitPoint)
     {
         GetComponent<Death>().Kill(hitPoint);
+
+        RemoveEventListeners();
+
         Destroy(GetComponent<Movement>());
         Destroy(gameObject.GetComponentInChildren<fieldOfView>().gameObject);
         Destroy(this);
+    }
+
+    void AddEventListeners()
+    {
+        // Start listening to alert system events
+        alertSystem.onAlarmStarted.AddListener(AlarmStartedHandler);
+        alertSystem.onAlarmTimerExpired.AddListener(AlarmExpiredHandler);
+    }
+
+    void RemoveEventListeners()
+    {
+        // Remove alarm event listeners
+        alertSystem.onAlarmStarted.RemoveListener(AlarmStartedHandler);
+        alertSystem.onAlarmTimerExpired.AddListener(AlarmExpiredHandler);
+        TargetLost();
+    }
+
+    // Update the rest of the enemy network
+    void TargetSighted()
+    {
+        alertSystem.AddSelfToNetwork(this);
+        hasTargetInSight = true;
+    }
+
+    void TargetLost()
+    {
+        alertSystem.RemoveSelfFromNetwork(this);
+        hasTargetInSight = false;
     }
 
     private void OnDrawGizmos()
