@@ -24,4 +24,9 @@ public class AIStateController : MonoBehaviour
         currentState = newState;
         currentState.Enter();
     }
+
+    public Pathfinding GetPathfinder()
+    {
+        return FindObjectOfType<Pathfinding>();
+    }
 }

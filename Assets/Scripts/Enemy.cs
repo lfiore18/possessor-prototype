@@ -11,13 +11,9 @@ public class Enemy : AIStateController
     [SerializeField] [Range(1, 360)] float fovAngle = 30f;
     [SerializeField] [Range(1, 30)] float visionRange = 10f;
 
-    [SerializeField] Pathfinding pathfinding;
-    public PatrolPath patrolPath;
     ICombatBehaviour combatBehaviour;
 
-    List<Vector3Int> pathToPlayer = new List<Vector3Int>();
-
-    GameObject player;
+    public GameObject player;
     AlertSystem alertSystem;
     Rigidbody2D rigidBody;
 
@@ -54,24 +50,15 @@ public class Enemy : AIStateController
     //      - default: Follow a path using BFS until target is back in line of sight
     //      - exit: Nothing
 
-    float waitForSecs = 5f;
-    float timeSinceLastUpdate = 0;
-
     new void Start()
     {
         player = GameObject.Find("Player");
         rigidBody = GetComponent<Rigidbody2D>();
 
-        if (pathfinding == null)
-            pathfinding = FindObjectOfType<Pathfinding>();
-
-        if (patrolPath == null)
-            patrolPath = GetComponent<PatrolPath>();
-
         if (combatBehaviour == null)
             combatBehaviour = GetComponent<ICombatBehaviour>();
 
-        base.currentState = new PatrolState(this, patrolPath, rigidBody);
+        base.currentState = new PatrolState(this, rigidBody, player.transform, movementSpeed);
         base.currentState.Enter();
     }
 
@@ -87,7 +74,7 @@ public class Enemy : AIStateController
         distanceFromPlayer = Vector2.Distance(target, transform.position);
         lookDirection = target - rigidBody.position;
 
-        float angleFromPlayer = Vector2.Angle(transform.up, lookDirection);
+        float angleFromTarget = Vector2.Angle(transform.up, lookDirection);
 
         ContactFilter2D contactFilter = new ContactFilter2D();
         contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
@@ -97,7 +84,7 @@ public class Enemy : AIStateController
 
         // fovAngle divided in two since the enemy is the angle spread across his left/right sides
         // TODO: Change this so that it checks to see if the player's collider is within fovAngle
-        if (distanceFromPlayer <= visionRange && angleFromPlayer <= (fovAngle / 2))
+        if (distanceFromPlayer <= visionRange && angleFromTarget <= (fovAngle / 2))
         {
             return hit.collider != null && hit.collider.name == "Player";
         }
@@ -105,9 +92,24 @@ public class Enemy : AIStateController
         return false;
     }
 
-    public float Aim(Vector2 target)
+    public void Aim(Vector2 target)
     {
         // Find the direction to look in by subtracting the current position of this game object from the target position in world co-ordinates
-        return Utils.RotatationAngleToTarget(rigidBody.position, target); // Returns the angle between "x" and "x, y = 1"
+        rigidBody.rotation = Utils.RotatationAngleToTarget(rigidBody.position, target); // Returns the angle between "x" and "x, y = 1"
+    }
+
+    public float GetFovAngle()
+    {
+        return fovAngle;
+    }
+
+    public float GetVisionRange()
+    {
+        return visionRange;
+    }
+
+    public float GetMovementSpeed()
+    {
+        return movementSpeed;
     }
 }
