@@ -2,26 +2,37 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AttackState : AIState
+public class AttackState : EnemyState
 {
+    Transform targetTransform;
 
-    public AttackState(AIStateController controller, ICombatBehaviour combatBehaviour) : base(controller)
+    public AttackState(Enemy controller, Transform targetTransform) : base(controller) 
     {
-
+        this.targetTransform = targetTransform;
     }
 
     public override void Enter()
     {
-        throw new System.NotImplementedException();
+        Debug.Log("Entering Attack State");
     }
 
     public override void Execute()
     {
-        throw new System.NotImplementedException();
+        if (controller.IsTargetInSight(targetTransform.position))
+        {
+            controller.Aim(targetTransform.position);
+            controller.combatBehaviour.Attack();
+        } else
+        {
+            controller.ChangeState(new ChaseState(controller, targetTransform));
+        }
+
+        Debug.Log("Attacking Target");
     }
 
     public override void Exit()
     {
-        throw new System.NotImplementedException();
+        controller.combatBehaviour.StopAttacking();
+        Debug.Log("Exiting Attack State");
     }
 }

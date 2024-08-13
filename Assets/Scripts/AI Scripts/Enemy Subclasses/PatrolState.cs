@@ -2,25 +2,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PatrolState : AIState
+public class PatrolState : EnemyState
 {
     bool reversePath = false;
     int pathIndex = 0;
 
     float waitForSecs = 0;
-    float movementSpeed = 0;
 
     PatrolPath patrolPath;
-    Rigidbody2D rigidBody;
-
     Transform targetTransform;
 
-    public PatrolState(AIStateController controller, Rigidbody2D rigidBody, Transform targetTransform, float movementSpeed) : base(controller) 
+    public PatrolState(Enemy controller, Transform targetTransform) : base(controller) 
     {
         this.patrolPath = controller.GetComponent<PatrolPath>();
-        this.rigidBody = rigidBody;
         this.targetTransform = targetTransform;
-        this.movementSpeed = movementSpeed;
     }
 
     public override void Enter()
@@ -32,11 +27,8 @@ public class PatrolState : AIState
     {
         waitForSecs -= Time.deltaTime;
 
-        // TODO: Get enemy's fov and view distance, check if player is in LOS and if so, controller.changeState(
-        Enemy enemy = controller as Enemy;
-
-        if (enemy.IsTargetInSight(targetTransform.position)) controller.ChangeState(
-            new ChaseState(controller, rigidBody, controller.GetPathfinder(), targetTransform, movementSpeed * 3));
+        if (controller.IsTargetInSight(targetTransform.position)) controller.ChangeState(
+            new ChaseState(controller, targetTransform));
 
         if (waitForSecs <= 0) waitForSecs = ReachedWaypointThisFrame(3) ? patrolPath.waitForSecs : 0;
     }
@@ -77,9 +69,9 @@ public class PatrolState : AIState
         var movementThisFrame = movementSpeed * Time.fixedDeltaTime;
 
         if (patrolPath.lookInMovingDirection)
-            rigidBody.rotation = Utils.RotatationAngleToTarget(controller.transform.position, patrolPath.patrolPoints[pathIndex]);
+            controller.rigidBody.rotation = Utils.RotatationAngleToTarget(controller.transform.position, patrolPath.patrolPoints[pathIndex]);
 
-        rigidBody.position = Vector2.MoveTowards
+        controller.rigidBody.position = Vector2.MoveTowards
             (controller.transform.position, new Vector2(targetPosition.x, targetPosition.y), movementThisFrame);
     }
 

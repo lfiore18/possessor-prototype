@@ -78,7 +78,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
             if (IsTargetInLOS(currentTargetPos))
             {
                 Aim(currentTargetPos);
-                combatBehaviour.PerformCombatAction();
+                combatBehaviour.Attack();
 
                 alertTimer = 5;
                 Debug.Log("Still has sight");
@@ -88,7 +88,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
                 // Runs when the target has broken line of sight with the enemy
 
                 // Stop attacking because target is no longer in sight
-                combatBehaviour.StopCombatAction();
+                combatBehaviour.StopAttacking();
 
                 // TODO: implement a "last known position" mechanic
                 // the enemy can continue to track the target for a set period of time (say 5 seconds)

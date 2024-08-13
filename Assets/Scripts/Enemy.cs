@@ -5,18 +5,26 @@ using UnityEngine;
 
 public class Enemy : AIStateController
 {
-    [SerializeField] float movementSpeed = 2f;
+    public float movementSpeed = 2f;
 
     // vision parameters
-    [SerializeField] [Range(1, 360)] float fovAngle = 30f;
-    [SerializeField] [Range(1, 30)] float visionRange = 10f;
+    [Range(1, 360)] public float fovAngle = 30f;
+    [Range(11, 30)] public float visionRange = 11f;
+    [Range(1, 10)] public float attackRange = 10f;
 
-    ICombatBehaviour combatBehaviour;
-
+    // TODO: Currently, these properties are public so AIStates can access them and pass the values to the next state if needed
+    // It would probably be better to just pass the "Enemy" object to the next state, but then we'd have a duplicate of Enemy - one as a "AIStateController" and the other
+    // as simply an "Enemy" - in each state:
+    // Consider removing the "controller" property from the abstract class "AIState", and then creating a new derived class from AIState called
+    // EnemyState which defines it's own controller - which can be a derivation of AIStateController with it's own public properties that it can 
+    // access publicly, or getters
+    // 
+    public ICombatBehaviour combatBehaviour;
     public GameObject player;
-    AlertSystem alertSystem;
-    Rigidbody2D rigidBody;
+    public Rigidbody2D rigidBody;
 
+    AlertSystem alertSystem;
+    
     Vector2 lookDirection;
     Vector2 currentTargetPos;
 
@@ -58,7 +66,7 @@ public class Enemy : AIStateController
         if (combatBehaviour == null)
             combatBehaviour = GetComponent<ICombatBehaviour>();
 
-        base.currentState = new PatrolState(this, rigidBody, player.transform, movementSpeed);
+        base.currentState = new PatrolState(this, player.transform);
         base.currentState.Enter();
     }
 
@@ -106,10 +114,5 @@ public class Enemy : AIStateController
     public float GetVisionRange()
     {
         return visionRange;
-    }
-
-    public float GetMovementSpeed()
-    {
-        return movementSpeed;
     }
 }
