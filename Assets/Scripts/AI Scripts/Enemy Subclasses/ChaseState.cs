@@ -8,7 +8,8 @@ public class ChaseState : EnemyState
     List<Vector3Int> pathToTarget = new List<Vector3Int>();
     Transform targetTransform;
 
-    float alertTime = 10;
+    float alertTime = 1;
+    float secsLeftToFindTarget = 0;
 
     public ChaseState(Enemy controller, Transform targetTransform) : base(controller) 
     {
@@ -19,6 +20,7 @@ public class ChaseState : EnemyState
 
     public override void Enter()
     {
+        secsLeftToFindTarget = alertTime;
         Debug.Log("Entering Chase State");
     }
 
@@ -26,12 +28,41 @@ public class ChaseState : EnemyState
     {
         Debug.Log("Pursuing Target");
 
+        bool targetInSight = controller.IsTargetInSight();
+        if (!targetInSight)
+        {
+            secsLeftToFindTarget -= Time.deltaTime;
+            Debug.Log("Secs left: " + secsLeftToFindTarget);
+        }
+
+        // Only track path to target if target is in sight or has been out of sight for less than "secsLeftToFindTarget"
+        if (pathfinding.PlayerPositionHasChanged() && (targetInSight || secsLeftToFindTarget > 0)) 
+            pathToTarget = pathfinding.CalculatePath(controller.transform.position);
+
+        // NOTE: UNCOMMENT FOR DEBUG GIZMOS        
+        controller.pathToTarget.Clear();
+        controller.pathToTarget.AddRange(pathToTarget);
+
+        // If target is in sight and in attack range, attack
+        if (targetInSight)
+        {
+            if (controller.IsTargetInAttackRange())
+                controller.ChangeState(new AttackState(controller, targetTransform));
+            secsLeftToFindTarget = alertTime;
+        }
+
+        if (pathToTarget.Count <= 0 && secsLeftToFindTarget <= 0)
+            controller.ChangeState(new PatrolState(controller, targetTransform));
 
 
-        if (pathfinding.PlayerPositionHasChanged()) pathToTarget = pathfinding.CalculatePath(controller.transform.position);
-        
-        if (controller.IsTargetInSight(targetTransform.position)) controller.ChangeState(new AttackState(controller, targetTransform));
-        
+        // If player is still in sight but out of attack range
+            // continue to follow
+        // Continue to track the player for 1 second
+        // If 1 second timer has expired
+            // do not update path to target
+            // follow path to target until last index
+                // if player is not in sight at last index
+                    // return to patrol
 
         FollowTarget();
     }

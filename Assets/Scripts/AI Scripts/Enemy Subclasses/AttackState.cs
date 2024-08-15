@@ -18,11 +18,12 @@ public class AttackState : EnemyState
 
     public override void Execute()
     {
-        if (controller.IsTargetInSight(targetTransform.position))
+        if (controller.IsTargetInSight() && controller.IsTargetInAttackRange())
         {
             controller.Aim(targetTransform.position);
-            controller.combatBehaviour.Attack();
-        } else
+            controller.combatBehaviour.Attack();            
+        }
+        else
         {
             controller.ChangeState(new ChaseState(controller, targetTransform));
         }

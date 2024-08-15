@@ -27,10 +27,17 @@ public class PatrolState : EnemyState
     {
         waitForSecs -= Time.deltaTime;
 
-        if (controller.IsTargetInSight(targetTransform.position)) controller.ChangeState(
-            new ChaseState(controller, targetTransform));
+        // If target is in sight and in attack range, switch to attack state, else switch to chase state
+        if (controller.IsTargetInSight())
+        {
+            if (controller.IsTargetInAttackRange())
+                controller.ChangeState(new AttackState(controller, targetTransform));
 
-        if (waitForSecs <= 0) waitForSecs = ReachedWaypointThisFrame(3) ? patrolPath.waitForSecs : 0;
+            controller.ChangeState(new ChaseState(controller, targetTransform));
+        }
+
+        // If this entity has reached a waypoint in it's path, wait for a few seconds before moving to next waypoint
+        if (waitForSecs <= 0) waitForSecs = ReachedWaypointThisFrame(controller.movementSpeed) ? patrolPath.waitForSecs : 0;
     }
 
     public override void Exit()

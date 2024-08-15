@@ -3,14 +3,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Enemy : AIStateController
+public class Enemy : AIStateController, IFieldOfViewUser
 {
     public float movementSpeed = 2f;
 
     // vision parameters
     [Range(1, 360)] public float fovAngle = 30f;
-    [Range(11, 30)] public float visionRange = 11f;
-    [Range(1, 10)] public float attackRange = 10f;
+    [Range(6, 15)] public float visionRange;
+    [Range(1, 5)] public float attackRange;
+
+    float distanceFromPlayer;
+    float angleFromTarget;
+
+    RaycastHit2D hit;
 
     // TODO: Currently, these properties are public so AIStates can access them and pass the values to the next state if needed
     // It would probably be better to just pass the "Enemy" object to the next state, but then we'd have a duplicate of Enemy - one as a "AIStateController" and the other
@@ -23,6 +28,8 @@ public class Enemy : AIStateController
     public GameObject player;
     public Rigidbody2D rigidBody;
 
+    ContactFilter2D contactFilter = new ContactFilter2D();
+
     AlertSystem alertSystem;
     
     Vector2 lookDirection;
@@ -30,12 +37,13 @@ public class Enemy : AIStateController
 
     const float RIGHT_ANGLE = 90f;
 
-    float distanceFromPlayer;
-    float angle;
     float alertTimer = 5;
 
     public bool hasTargetInSight = false;
     public bool isAlerted = false;
+
+    // DEBUG PURPOSES ONLY
+    public List<Vector3Int> pathToTarget;
 
     // Each enemy has the following states:
     // 1) Patrolling - the enemy will perform a "patrolling" behaviour - walking a route, rotating to use FOV to spot player, etc
@@ -63,8 +71,9 @@ public class Enemy : AIStateController
         player = GameObject.Find("Player");
         rigidBody = GetComponent<Rigidbody2D>();
 
-        if (combatBehaviour == null)
-            combatBehaviour = GetComponent<ICombatBehaviour>();
+        contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
+
+        if (combatBehaviour == null) combatBehaviour = GetComponent<ICombatBehaviour>();
 
         base.currentState = new PatrolState(this, player.transform);
         base.currentState.Enter();
@@ -77,27 +86,44 @@ public class Enemy : AIStateController
 
     // Returns true if the distance between the entity and the target is less than the vision range of the entity
     // and angle between the direction the entity is looking and the target is less than the entity's field of view
-    public bool IsTargetInSight(Vector2 target)
+    public bool IsTargetInSight()
+    {
+        // fovAngle divided in two since the enemy is the angle spread across his left/right sides
+        // TODO: Change this so that it checks to see if the player's collider is within fovAngle
+        UpdateSenseData(player.transform.position);
+
+        if (IsTargetInSightRange(visionRange))
+            return RayHitTarget();
+        return false;
+    }
+
+    public bool IsTargetInAttackRange()
+    {
+        return IsTargetInSightRange(attackRange);
+    }
+
+    bool IsTargetInSightRange(float range)
+    {
+        return distanceFromPlayer <= range && angleFromTarget <= (fovAngle / 2);
+    }
+
+    public bool RayHitTarget()
+    {
+        RayCastToTarget();
+        return hit.collider != null && hit.collider.name == "Player";
+    }
+
+    void RayCastToTarget()
+    {
+        hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Tilemap", "Physical Objects", "Doors", "Player"));
+        Debug.DrawLine(transform.position, player.transform.position, Color.red);
+    }
+
+    public void UpdateSenseData(Vector2 target)
     {
         distanceFromPlayer = Vector2.Distance(target, transform.position);
         lookDirection = target - rigidBody.position;
-
-        float angleFromTarget = Vector2.Angle(transform.up, lookDirection);
-
-        ContactFilter2D contactFilter = new ContactFilter2D();
-        contactFilter.SetLayerMask(LayerMask.GetMask("Enemy"));
-
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, lookDirection, distanceFromPlayer, LayerMask.GetMask("Tilemap", "Physical Objects", "Doors", "Player"));
-        Debug.DrawLine(rigidBody.position, currentTargetPos, Color.red);
-
-        // fovAngle divided in two since the enemy is the angle spread across his left/right sides
-        // TODO: Change this so that it checks to see if the player's collider is within fovAngle
-        if (distanceFromPlayer <= visionRange && angleFromTarget <= (fovAngle / 2))
-        {
-            return hit.collider != null && hit.collider.name == "Player";
-        }
-
-        return false;
+        angleFromTarget = Vector2.Angle(transform.up, lookDirection);
     }
 
     public void Aim(Vector2 target)
@@ -114,5 +140,18 @@ public class Enemy : AIStateController
     public float GetVisionRange()
     {
         return visionRange;
+    }
+
+    private void OnDrawGizmos()
+    {
+        var halfCellSize = new Vector3(.5f, .5f, 0);
+        if (pathToTarget != null)
+        {
+            foreach (Vector3Int position in pathToTarget)
+            {
+                Gizmos.color = new Color(1, 0.6f, 1, 0.4f);
+                Gizmos.DrawCube(position + halfCellSize, halfCellSize * 2);
+            }
+        }
     }
 }
