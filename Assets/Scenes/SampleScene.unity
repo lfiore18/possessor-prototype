@@ -5317,7 +5317,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1268925656
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5429,6 +5429,27 @@ Transform:
   m_Father: {fileID: 1712076916}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 45}
+--- !u!1 &1436885825 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9030106252533947708, guid: e512606baebd32d4586e3ee2a04990d9,
+    type: 3}
+  m_PrefabInstance: {fileID: 9030106252953734405}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1436885826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1436885825}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3729409db5b74b44ac59d2d3fe53e03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  decelerationRate: 2
+  bloodDecalPrefab: {fileID: 8958427039896533690, guid: 982520bd98184344d8c1dfcf80550661,
+    type: 3}
 --- !u!4 &1519975407 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6632474932340930136, guid: 59efa3b3fc855e042a40c2716b19197e,
