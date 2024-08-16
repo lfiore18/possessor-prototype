@@ -46,6 +46,9 @@ public class Death : MonoBehaviour
         isDead = true;
         CreateBloodStain(hitPoint);
 
+        Destroy(GetComponent<Movement>());
+        //Destroy(gameObject.GetComponentInChildren<fieldOfView>().gameObject);
+        Destroy(GetComponent<Enemy>());
     }
 
     void CreateBloodStain(Vector2 hitPoint)
