@@ -6,6 +6,7 @@ public class PatrolPath : MonoBehaviour
     public List<Vector3> patrolPoints;
     public bool lookInMovingDirection = false;
     public bool loopPatrol = false;
+    public float waitForSecs = 5f;
     
     [Header("Editor-Only Properties")]
     public Color pathColor = Color.green;

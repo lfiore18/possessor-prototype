@@ -4,8 +4,8 @@ using UnityEngine;
 
 public interface ICombatBehaviour
 {
-    void PerformCombatAction();
-    void StopCombatAction();
+    void Attack();
+    void StopAttacking();
 }
 
 public class GunUser : MonoBehaviour, ICombatBehaviour
@@ -26,7 +26,7 @@ public class GunUser : MonoBehaviour, ICombatBehaviour
     }
 
     // If enemy is a gun wielder, should start firing when player is in line of sight
-    public void PerformCombatAction()
+    public void Attack()
     {
         if (!isFiring)
         {
@@ -36,10 +36,14 @@ public class GunUser : MonoBehaviour, ICombatBehaviour
         }
     }
 
-    public void StopCombatAction()
+
+    // Immediatley stop firing and combat coroutines
+    public void StopAttacking()
     {
-        if (!isFiring)
-            StopCoroutine(combatCoroutine);
+        isFiring = false;
+        
+        gun.StopFiring();
+        StopCoroutine(combatCoroutine);        
     }
 
     IEnumerator WaitAndFire(float fireForSecs, float waitForSecs)

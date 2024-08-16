@@ -30,6 +30,7 @@ public class Gun : MonoBehaviour
                             transform.GetChild(0).position,
                             Quaternion.identity)
                 as GameObject;
+
             bulletInstance.transform.rotation = transform.rotation;
             bulletInstance.GetComponent<Rigidbody2D>().velocity = transform.up * projectileSpeed;
             yield return new WaitForSeconds(fireRate);
