@@ -18,12 +18,6 @@ public class Enemy : AIStateController, IFieldOfViewUser
     RaycastHit2D hit;
 
     // TODO: Currently, these properties are public so AIStates can access them and pass the values to the next state if needed
-    // It would probably be better to just pass the "Enemy" object to the next state, but then we'd have a duplicate of Enemy - one as a "AIStateController" and the other
-    // as simply an "Enemy" - in each state:
-    // Consider removing the "controller" property from the abstract class "AIState", and then creating a new derived class from AIState called
-    // EnemyState which defines it's own controller - which can be a derivation of AIStateController with it's own public properties that it can 
-    // access publicly, or getters
-    // 
     public ICombatBehaviour combatBehaviour;
     public GameObject player;
     public Rigidbody2D rigidBody;
@@ -34,10 +28,6 @@ public class Enemy : AIStateController, IFieldOfViewUser
     
     Vector2 lookDirection;
     Vector2 currentTargetPos;
-
-    const float RIGHT_ANGLE = 90f;
-
-    float alertTimer = 5;
 
     public bool hasTargetInSight = false;
     public bool isAlerted = false;
@@ -66,6 +56,14 @@ public class Enemy : AIStateController, IFieldOfViewUser
     //      - default: Follow a path using BFS until target is back in line of sight
     //      - exit: Nothing
 
+    // Alert System:
+    // When the enemy spots the target:
+    // 1) Enemy should notifify alert system that target was spotted
+    // 2) Alert system should raise an alarm, alerting all other enemies to the position of the player
+    // Other enemies should
+
+
+
     new void Start()
     {
         player = GameObject.Find("Player");
@@ -91,7 +89,6 @@ public class Enemy : AIStateController, IFieldOfViewUser
         // fovAngle divided in two since the enemy is the angle spread across his left/right sides
         // TODO: Change this so that it checks to see if the player's collider is within fovAngle
         UpdateSenseData(player.transform.position);
-
         if (IsTargetInSightRange(visionRange))
             return RayHitTarget();
         return false;

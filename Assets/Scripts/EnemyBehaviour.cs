@@ -130,13 +130,13 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         // Enemy alerted!        
         if (IsTargetInLOS(target))
         {
-            TargetSighted();
+            //TargetSighted();
             AlarmStartedHandler();
             GetComponentInChildren<fieldOfView>().SetColour(Color.red);
         }
         else
         {
-            TargetLost();
+            //TargetLost();
             GetComponentInChildren<fieldOfView>().SetColour(Color.grey);
         }
     }
@@ -335,9 +335,9 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
         // Remove alarm event listeners
         alertSystem.onAlarmStarted.RemoveListener(AlarmStartedHandler);
         alertSystem.onAlarmTimerExpired.AddListener(AlarmExpiredHandler);
-        TargetLost();
+        //TargetLost();
     }
-
+/*
     // Update the rest of the enemy network
     void TargetSighted()
     {
@@ -349,7 +349,7 @@ public class EnemyBehaviour : MonoBehaviour, IFieldOfViewUser
     {
         alertSystem.RemoveSelfFromNetwork(this);
         hasTargetInSight = false;
-    }
+    }*/
 
     private void OnDrawGizmos()
     {

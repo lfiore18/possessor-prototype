@@ -8,14 +8,14 @@ public class ChaseState : EnemyState
     List<Vector3Int> pathToTarget = new List<Vector3Int>();
     Transform targetTransform;
 
-    float alertTime = 1;
+    float alertTime = 2;
     float secsLeftToFindTarget = 0;
 
     public ChaseState(Enemy controller, Transform targetTransform) : base(controller) 
     {
         this.pathfinding = controller.GetPathfinder();
         this.targetTransform = targetTransform;
-        this.pathToTarget = pathfinding.CalculatePath(targetTransform.position);
+        this.pathToTarget = pathfinding.CalculatePath(controller.transform.position);
     }
 
     public override void Enter()
@@ -27,21 +27,22 @@ public class ChaseState : EnemyState
     public override void Execute()
     {
         Debug.Log("Pursuing Target");
-
-        bool targetInSight = controller.IsTargetInSight();
-        if (!targetInSight)
-        {
-            secsLeftToFindTarget -= Time.deltaTime;
-            Debug.Log("Secs left: " + secsLeftToFindTarget);
-        }
-
-        // Only track path to target if target is in sight or has been out of sight for less than "secsLeftToFindTarget"
-        if (pathfinding.PlayerPositionHasChanged() && (targetInSight || secsLeftToFindTarget > 0)) 
-            pathToTarget = pathfinding.CalculatePath(controller.transform.position);
-
         // NOTE: UNCOMMENT FOR DEBUG GIZMOS        
         controller.pathToTarget.Clear();
         controller.pathToTarget.AddRange(pathToTarget);
+
+        bool targetInSight = controller.IsTargetInSight();
+        
+        // Only count down if enemy is out of sight
+        if (!targetInSight)
+        {
+            secsLeftToFindTarget -= Time.deltaTime;
+            Debug.Log("Seconds left to find target: " + secsLeftToFindTarget);
+        }
+
+        // Only track path to target if target is in sight or has been out of sight for less than "secsLeftToFindTarget"
+        if (targetInSight || secsLeftToFindTarget > 0) 
+            pathToTarget = pathfinding.CalculatePath(controller.transform.position);
 
         // If target is in sight and in attack range, attack
         if (targetInSight)
@@ -51,18 +52,9 @@ public class ChaseState : EnemyState
             secsLeftToFindTarget = alertTime;
         }
 
+        // If enemy has reached the end of the path and run out of time to track target, switch to patrol state
         if (pathToTarget.Count <= 0 && secsLeftToFindTarget <= 0)
             controller.ChangeState(new PatrolState(controller, targetTransform));
-
-
-        // If player is still in sight but out of attack range
-            // continue to follow
-        // Continue to track the player for 1 second
-        // If 1 second timer has expired
-            // do not update path to target
-            // follow path to target until last index
-                // if player is not in sight at last index
-                    // return to patrol
 
         FollowTarget();
     }

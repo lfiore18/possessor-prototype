@@ -37,7 +37,7 @@ public class PatrolState : EnemyState
         }
 
         // If this entity has reached a waypoint in it's path, wait for a few seconds before moving to next waypoint
-        if (waitForSecs <= 0) waitForSecs = ReachedWaypointThisFrame(controller.movementSpeed) ? patrolPath.waitForSecs : 0;
+        if (waitForSecs <= 0) waitForSecs = ReachedWaypointThisFrame(3) ? patrolPath.waitForSecs : 0;
     }
 
     public override void Exit()
